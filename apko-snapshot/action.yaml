@@ -17,11 +17,6 @@ inputs:
       The base tag to use for publishing the image.
     required: true
 
-  apko_version:
-    description: |
-      The apko version to use.
-    default: v0.1.1
-
 runs:
   using: composite
   steps:
@@ -30,8 +25,7 @@ runs:
       run: |
         echo ::set-output name=date::$(date -u +%Y%m%d)
       shell: bash
-    - uses: chainguard-dev/actions/apko-build@main
+    - uses: chainguard-dev/actions/apko-build@chore/upgrade-apko-0.1.1
       with:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ steps.snapshot-date.outputs.date }}
-        apko_version: ${{ inputs.apko_version }}
