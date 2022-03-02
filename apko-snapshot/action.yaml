@@ -1,0 +1,36 @@
+# Copyright 2022 The Distroless Authors
+# SPDX-License-Identifier: Apache-2.0
+
+name: 'Build image snapshot with apko'
+description: |
+  This action builds an OCI image with apko, given a config file
+  and base tag to use.
+
+inputs:
+  config:
+    description: |
+      The config file to use for building the image.
+    default: .apko.yaml
+
+  base-tag:
+    description: |
+      The base tag to use for publishing the image.
+    required: true
+
+  apko_version:
+    description: |
+      The apko version to use.
+    default: v0.1.1
+
+runs:
+  using: composite
+  steps:
+    - name: Generate snapshot date
+      id: snapshot-date
+      run: |
+        echo ::set-output name=date::$(date -u +%Y%m%d)
+    - uses: chainguard-dev/actions/apko-build@main
+      with:
+        config: ${{ inputs.config }}
+        tag: ${{ inputs.base-tag }}:${{ steps.snapshot-date.outputs.date }}
+        apko_version: ${{ inputs.apko_version }}
