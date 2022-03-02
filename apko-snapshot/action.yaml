@@ -15,6 +15,7 @@ inputs:
   base-tag:
     description: |
       The base tag to use for publishing the image.
+    default: ghcr.io/${{ github.repository }}
     required: true
 
 runs:
@@ -29,3 +30,8 @@ runs:
       with:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ steps.snapshot-date.outputs.date }}
+    # TODO(kaniini): delete me when apko supports multi-tagging
+    - uses: chainguard-dev/actions/apko-build@chore/upgrade-apko-0.1.1
+      with:
+        config: ${{ inputs.config }}
+        tag: ${{ inputs.base-tag }}:latest
