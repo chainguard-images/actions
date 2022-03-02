@@ -29,6 +29,7 @@ runs:
       id: snapshot-date
       run: |
         echo ::set-output name=date::$(date -u +%Y%m%d)
+      shell: bash
     - uses: chainguard-dev/actions/apko-build@main
       with:
         config: ${{ inputs.config }}
