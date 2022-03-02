@@ -1,6 +1,9 @@
 # APKO Snapshot
 
-This action builds a snapshot with APKO given a config file and base tag to use.
+This action builds a snapshot with [APKO](https://github.com/chainguard-dev/apko)
+given a config file and base tag to use.
+
+The resulting image is signed with `cosign` keyless signing.
 
 ## Usage
 
