@@ -26,12 +26,12 @@ runs:
       run: |
         echo ::set-output name=date::$(date -u +%Y%m%d)
       shell: bash
-    - uses: chainguard-dev/actions/apko-build@chore/upgrade-apko-0.1.1
+    - uses: chainguard-dev/actions/apko-build@main
       with:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ steps.snapshot-date.outputs.date }}
     # TODO(kaniini): delete me when apko supports multi-tagging
-    - uses: chainguard-dev/actions/apko-build@chore/upgrade-apko-0.1.1
+    - uses: chainguard-dev/actions/apko-build@main
       with:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:latest
