@@ -18,6 +18,16 @@ inputs:
     default: ghcr.io/${{ github.repository }}
     required: true
 
+  username:
+    description: |
+      The username to use for docker login step.
+    default: ${{ github.repository_owner }}
+
+  token:
+    description: |
+      The token to use for docker login step.
+    default: ${{ github.token }}
+
 runs:
   using: composite
   steps:
@@ -40,11 +50,24 @@ runs:
 
     # TODO(kaniini): delete me when apko supports multi-tagging
     - uses: chainguard-dev/actions/apko-build@main
+      id: apko-latest
       with:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:latest
+
+    - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
+      with:
+        registry: ghcr.io
+        username: ${{ inputs.username }}
+        password: ${{ inputs.token }}
 
     - shell: bash
       run: |
         # TODO: Add attributes based on things like the commit.
         COSIGN_EXPERIMENTAL=true cosign sign ${{ steps.apko.outputs.digest }}
+
+    # TODO(kaniini): Same deal for multi-tagging.
+    - shell: bash
+      run: |
+        # TODO: Add attributes based on things like the commit.
+        COSIGN_EXPERIMENTAL=true cosign sign ${{ steps.apko-latest.outputs.digest }}
