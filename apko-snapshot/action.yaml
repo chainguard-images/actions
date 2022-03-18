@@ -36,6 +36,9 @@ runs:
       with:
         version: v1.5.2
 
+    - name: Setup QEMU
+      uses: docker/setup-qemu-action@v1.2.0
+
     - name: Generate snapshot date
       id: snapshot-date
       run: |
