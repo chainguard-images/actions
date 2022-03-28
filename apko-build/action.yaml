@@ -1,0 +1,31 @@
+# Copyright 2022 The Distroless Authors
+# SPDX-License-Identifier: Apache-2.0
+
+name: 'Build image with apko'
+description: |
+  This action build an OCI image with apko, given a config file
+  and tag to use and output a tar file and does not push to a registry.
+
+inputs:
+  config:
+    description: |
+      The config file to use for building the image.
+    default: .apko.yaml
+    required: false
+
+  tag:
+    description: |
+      The tag to use for building the image.
+    required: true
+
+runs:
+  using: docker
+  image: "docker://ghcr.io/chainguard-dev/apko:v0.2.2"
+  entrypoint: /bin/sh
+  args:
+    - '-c'
+    - |
+      set -o errexit
+
+      /ko-app/apko build ${{ inputs.config }} ${{ inputs.tag }} output.tar
+      echo EXIT CODE: $?
