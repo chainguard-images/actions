@@ -58,7 +58,11 @@ runs:
         password: ${{ inputs.token }}
 
     - shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: "true"
       run: |
-        # TODO: Add attributes based on things like the commit.
-        COSIGN_EXPERIMENTAL=true cosign sign ${{ steps.apko.outputs.digest }}
+        cosign sign ${{ steps.apko.outputs.digest }} \
+            -a sha=${{ github.sha }} \
+            -a run_id=${{ github.run_id }} \
+            -a run_attempt=${{ github.run_attempt }}
 
