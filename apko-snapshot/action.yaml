@@ -34,7 +34,7 @@ runs:
     - name: Setup cosign
       uses: sigstore/cosign-installer@main
       with:
-        version: v1.5.2
+        cosign-release: v1.5.2
 
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v1.2.0
