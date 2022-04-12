@@ -22,6 +22,17 @@ The resulting image is signed with `cosign` keyless signing.
 ```yaml
 steps:
 - uses: distroless/actions/apko-snapshot@main
+  id: apko-snapshot
   with:
     base-tag: ghcr.io/distroless/foo
+
+# Pass the digest output to a trivy scan.
+- name: Run Trivy vulnerability scanner
+  uses: aquasecurity/trivy-action@master
+  with:
+    image-ref: ${{ steps.apko-snapshot.outputs.digest }}
+    format: 'table'
+    exit-code: '1'
+    vuln-type: 'os,library'
+    severity: 'CRITICAL,HIGH'
 ```
