@@ -28,6 +28,12 @@ inputs:
       The token to use for docker login step.
     default: ${{ github.token }}
 
+outputs:
+  digest:
+    value: ${{ steps.apko.outputs.digest }}
+    description: |
+      The digest of the published container image.
+
 runs:
   using: composite
   steps:
