@@ -28,6 +28,11 @@ inputs:
       The token to use for docker login step.
     default: ${{ github.token }}
 
+  trivy-exit-code:
+    description: |
+      The exit code for Trivy to use when vulnerabilities are encountered.
+    default: "1"
+
 outputs:
   digest:
     value: ${{ steps.apko.outputs.digest }}
@@ -42,6 +47,8 @@ runs:
       with:
         cosign-release: v1.5.2
 
+    - uses: imjasonh/setup-crane@v0.1
+
     - name: Setup QEMU
       uses: docker/setup-qemu-action@v1.2.0
 
@@ -51,11 +58,13 @@ runs:
         echo ::set-output name=date::$(date -u +%Y%m%d)
       shell: bash
 
+    # Only publish the versioned tag to start.  After we have signed and
+    # attested things, then we use crane to update :latest below.
     - uses: chainguard-dev/actions/apko-build@main
       id: apko
       with:
         config: ${{ inputs.config }}
-        tag: ${{ inputs.base-tag }}:${{ steps.snapshot-date.outputs.date }} ${{ inputs.base-tag }}:latest
+        tag: ${{ inputs.base-tag }}:${{ steps.snapshot-date.outputs.date }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:
@@ -72,3 +81,31 @@ runs:
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
 
+    - uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ steps.apko.outputs.digest }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        exit-code: ${{ inputs.trivy-exit-code }}
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN'
+
+    # TODO(mattmoor): Figure out how to get hte SARIF
+    # results uploading. This may need `content: write`
+    # permissions to publish the results...
+    # - uses: github/codeql-action/upload-sarif@v1
+    #   if: ${{ always() }}
+    #   with:
+    #     sarif_file: 'trivy-results.sarif'
+
+    # TODO(mattmoor): Add an attestation for the SARIF result using:
+    #    cosign attest --type vuln
+
+    # TODO(mattmoor): Replace trivy-exit-code with a Cue policy that
+    # we should run against the vuln result.
+
+    # Now that everything else has completed successfully, update :latest
+    # based on the digest produced above.
+    - shell: bash
+      run: |
+        crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:latest
