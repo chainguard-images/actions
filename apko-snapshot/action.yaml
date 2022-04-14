@@ -81,6 +81,11 @@ runs:
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
 
+    - id: scan-start
+      run: |
+        echo ::set-output name=date::$(TZ=Zulu date "+%Y-%m-%dT%H:%M:%SZ")
+      shell: bash
+
     - uses: aquasecurity/trivy-action@master
       with:
         image-ref: ${{ steps.apko.outputs.digest }}
@@ -98,8 +103,38 @@ runs:
     #   with:
     #     sarif_file: 'trivy-results.sarif'
 
-    # TODO(mattmoor): Add an attestation for the SARIF result using:
-    #    cosign attest --type vuln
+    - shell: bash
+      if: ${{ always() }}
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+        ATTESTATION=$(mktemp)
+
+        export SCANNER_URI=$(cat trivy-results.sarif | jq .runs[0].tool.driver.informationUri)
+        export SCANNER_VERSION=$(cat trivy-results.sarif | jq .runs[0].tool.driver.version)
+
+        cat > "${ATTESTATION}" <<EOF
+        {
+            "invocation": {
+              "parameters": null,
+              "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "event_id": "${{ github.event.id }}",
+              "builder.id": "${{ github.workflow }}"
+            },
+            "scanner": {
+              "uri": ${SCANNER_URI},
+              "version": ${SCANNER_VERSION},
+              "result": $(cat trivy-results.sarif | jq .)
+            },
+            "metadata": {
+              "scanStartedOn": "${{ steps.scan-start.outputs.date }}",
+              "scanFinishedOn": "$(TZ=Zulu date "+%Y-%m-%dT%H:%M:%SZ")"
+            }
+        }
+        EOF
+
+        cosign attest ${{ steps.apko.outputs.digest }} \
+            --type vuln --predicate "${ATTESTATION}"
 
     # TODO(mattmoor): Replace trivy-exit-code with a Cue policy that
     # we should run against the vuln result.
