@@ -14,8 +14,15 @@ inputs:
 
   base-tag:
     description: |
-      The base tag to use for publishing the image.
+      The container repository into which we should publish images.
     default: ghcr.io/${{ github.repository }}
+    required: true
+
+  target-tag:
+    description: |
+      The tag this build will produce upon success.  It will also be used
+      to form a date-based variant for tracking over time.
+    default: latest
     required: true
 
   username:
@@ -65,7 +72,7 @@ runs:
       id: apko
       with:
         config: ${{ inputs.config }}
-        tag: ${{ inputs.base-tag }}:${{ steps.snapshot-date.outputs.date }}
+        tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
@@ -97,7 +104,7 @@ runs:
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN'
 
-    # TODO(mattmoor): Figure out how to get hte SARIF
+    # TODO(mattmoor): Figure out how to get the SARIF
     # results uploading. This may need `content: write`
     # permissions to publish the results...
     # - uses: github/codeql-action/upload-sarif@v1
@@ -138,11 +145,11 @@ runs:
         cosign attest ${{ steps.apko.outputs.digest }} \
             --type vuln --predicate "${ATTESTATION}"
 
-    # TODO(mattmoor): Replace trivy-exit-code with a Cue policy that
+    # TODO(#7): Replace trivy-exit-code with a Cue policy that
     # we should run against the vuln result.
 
-    # Now that everything else has completed successfully, update :latest
+    # Now that everything else has completed successfully, update the target tag.
     # based on the digest produced above.
     - shell: bash
       run: |
-        crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:latest
+        crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:${{ inputs.target-tag }}
