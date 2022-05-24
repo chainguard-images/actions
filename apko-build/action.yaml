@@ -20,7 +20,7 @@ inputs:
 
 runs:
   using: docker
-  image: "docker://ghcr.io/chainguard-dev/apko:v0.2.2"
+  image: "docker://ghcr.io/chainguard-dev/apko:v0.3.3"
   entrypoint: /bin/sh
   args:
     - '-c'
