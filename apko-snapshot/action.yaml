@@ -30,6 +30,7 @@ inputs:
       Which registry to use.
     default: ghcr.io
     required: false
+
   username:
     description: |
       The username to use for docker login step.
@@ -57,7 +58,7 @@ runs:
     - name: Setup cosign
       uses: sigstore/cosign-installer@main
       with:
-        cosign-release: v1.5.2
+        cosign-release: v1.8.0
 
     - uses: imjasonh/setup-crane@v0.1
 
