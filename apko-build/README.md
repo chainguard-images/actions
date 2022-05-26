@@ -13,6 +13,9 @@ given a config file and base tag to use and output that to a tar file, this does
     config: foo.yaml
     # tag is the base tag to use, required.
     tag: ghcr.io/distroless/foo
+    # use-docker-mediatypes is whether or not to use Docker mediatypes.
+    # Optional.
+    use-docker-mediatypes: false
 ```
 
 ## Scenarios
