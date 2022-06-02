@@ -46,6 +46,12 @@ inputs:
       The exit code for Trivy to use when vulnerabilities are encountered.
     default: "1"
 
+  use-docker-mediatypes:
+    description: |
+      Use Docker mediatypes for building the image.
+    type: boolean
+    required: false
+
 outputs:
   digest:
     value: ${{ steps.apko.outputs.digest }}
@@ -80,6 +86,7 @@ runs:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
+        use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:

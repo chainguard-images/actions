@@ -18,14 +18,22 @@ inputs:
       The tag to use for building the image.
     required: true
 
+  use-docker-mediatypes:
+    description: |
+      Use Docker mediatypes for building the image.
+    type: boolean
+    required: false
+
 runs:
   using: docker
-  image: "docker://ghcr.io/chainguard-dev/apko:v0.3.3"
+  image: "docker://ghcr.io/chainguard-dev/apko:v0.4.0"
   entrypoint: /bin/sh
   args:
     - '-c'
     - |
       set -o errexit
 
-      /ko-app/apko build ${{ inputs.config }} ${{ inputs.tag }} output.tar
+      /ko-app/apko build \
+        ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
+        ${{ inputs.config }} ${{ inputs.tag }} output.tar
       echo EXIT CODE: $?
