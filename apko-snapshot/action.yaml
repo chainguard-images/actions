@@ -52,6 +52,16 @@ inputs:
     type: boolean
     required: false
 
+  keyring-append:
+    description: |
+      The value to pass to --keyring-append.
+    default: ''
+
+  archs:
+    description: |
+      The architectures to build for.
+    default: ''
+
 outputs:
   digest:
     value: ${{ steps.apko.outputs.digest }}
@@ -87,6 +97,8 @@ runs:
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
+        keyring-append: ${{ inputs.keyring-append }}
+        archs: ${{ inputs.archs }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:
