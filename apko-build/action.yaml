@@ -24,12 +24,6 @@ inputs:
     type: boolean
     required: false
 
-  retry-count:
-    description: |
-      If the command fail how many times we will retry (default: 2).
-    required: false
-    default: 2
-
 runs:
   using: docker
   image: "docker://ghcr.io/chainguard-dev/apko:v0.4.0"
@@ -39,18 +33,7 @@ runs:
     - |
       set -o errexit
 
-      n=0
-      status=0
-      until [ "$n" -ge ${{ inputs.retry-count }} ]
-      do
-        /ko-app/apko build \
-          ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
-          ${{ inputs.config }} ${{ inputs.tag }} output.tar && status=0 && break
-
-        status=1
-        echo "apko build failed, will retry after 15 seconds..."
-        n=$((n+1))
-        sleep 15
-      done
-
-      echo EXIT CODE: $status
+      /ko-app/apko build \
+        ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
+        ${{ inputs.config }} ${{ inputs.tag }} output.tar
+      echo EXIT CODE: $?
