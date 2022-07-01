@@ -24,6 +24,13 @@ inputs:
     type: boolean
     required: false
 
+  debug:
+    description: |
+      Enable debug logging.
+    type: boolean
+    required: false
+    default: false
+
 runs:
   using: docker
   image: "docker://ghcr.io/chainguard-dev/apko:v0.4.0"
@@ -35,5 +42,6 @@ runs:
 
       /ko-app/apko build \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
+        ${{ inputs.debug && '--debug' }} \
         ${{ inputs.config }} ${{ inputs.tag }} output.tar
       echo EXIT CODE: $?
