@@ -4,14 +4,33 @@
 name: 'Build image with apko'
 description: |
   This action build an OCI image with apko, given a config file
-  and tag to use and output a tar file and does not push to a registry.
+  and tag to use.
 
 inputs:
   config:
     description: |
       The config file to use for building the image.
     default: .apko.yaml
-    required: false
+
+  tag:
+    description: |
+      The tag to use for publishing the image.
+    required: true
+
+  repository_owner:
+    description: |
+      The repository owner's GitHub username.
+    default: ${{ github.repository_owner }}
+
+  token:
+    description: |
+      The repository owner's GitHub token.
+    default: ${{ github.token }}
+
+  image_refs:
+    description: |
+      The value to pass to --image-refs.
+    default: /tmp/apko.images
 
   keyring-append:
     description: |
@@ -29,28 +48,24 @@ inputs:
       This is set as the SOURCE_DATE_EPOCH environment variable.
     default: ''
 
-  tag:
-    description: |
-      The tag to use for building the image.
-    required: true
-
   use-docker-mediatypes:
     description: |
       Use Docker mediatypes for building the image.
     type: boolean
     required: false
-  
 
-  debug:
+outputs:
+  digest:
     description: |
-      Enable debug logging.
-    type: boolean
-    required: false
-    default: false
+      The digest of the published container image.
 
 runs:
   using: docker
-  image:  "docker://ghcr.io/chainguard-dev/apko:canary"
+  image: "docker://ghcr.io/chainguard-dev/apko:canary"
+  env:
+    # Set up go-containerregistry's GitHub keychain.
+    GITHUB_ACTOR: ${{ inputs.repository_owner }}
+    GITHUB_TOKEN: ${{ inputs.token }}
   entrypoint: /bin/sh
   args:
     - '-c'
@@ -59,8 +74,8 @@ runs:
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
       [ -n "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
-      /ko-app/apko build \
+      /ko-app/apko publish \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
-        ${{ inputs.debug && '--debug' }} \
-        ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $archs
+        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs
       echo EXIT CODE: $?
+      echo ::set-output name=digest::$(cat "${{ inputs.image_refs }}")
