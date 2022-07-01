@@ -24,14 +24,10 @@ inputs:
     type: boolean
     required: false
   
-  apko-image:
-    description: |
-      The apko image to use for building the image
-    default: "docker://ghcr.io/chainguard-dev/apko:v0.4.0"
 
 runs:
   using: docker
-  image:  ${{ inputs.apko-image }}
+  image:  "docker://ghcr.io/chainguard-dev/apko:9eb34d60d6334bb5d3df4885b37abc7edab06eeb"
   entrypoint: /bin/sh
   args:
     - '-c'
