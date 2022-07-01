@@ -39,7 +39,6 @@ inputs:
       Use Docker mediatypes for building the image.
     type: boolean
     required: false
-  
 
   debug:
     description: |
