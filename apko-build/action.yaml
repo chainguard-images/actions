@@ -39,7 +39,13 @@ inputs:
       Use Docker mediatypes for building the image.
     type: boolean
     required: false
-  
+
+  debug:
+    description: |
+      Enable debug logging.
+    type: boolean
+    required: false
+    default: false
 
 runs:
   using: docker
@@ -54,5 +60,6 @@ runs:
       [ -n "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
       /ko-app/apko build \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
+        ${{ inputs.debug && '--debug' }} \
         ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $archs
       echo EXIT CODE: $?

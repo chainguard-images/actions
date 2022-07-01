@@ -62,6 +62,13 @@ inputs:
       The architectures to build for.
     default: ''
 
+  debug:
+    description: |
+      Enable debug logging.
+    type: boolean
+    required: false
+    default: false
+
 outputs:
   digest:
     value: ${{ steps.apko.outputs.digest }}
@@ -99,6 +106,7 @@ runs:
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}
         archs: ${{ inputs.archs }}
+        debug: ${{ inputs.debug }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:

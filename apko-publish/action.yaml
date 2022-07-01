@@ -54,6 +54,13 @@ inputs:
     type: boolean
     required: false
 
+  debug:
+    description: |
+      Enable debug logging.
+    type: boolean
+    required: false
+    default: false
+
 outputs:
   digest:
     description: |
@@ -76,6 +83,7 @@ runs:
       [ -n "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
       /ko-app/apko publish \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
+        ${{ inputs.debug && '--debug' }} \
         --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat "${{ inputs.image_refs }}")
