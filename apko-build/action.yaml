@@ -57,7 +57,7 @@ runs:
       set -o errexit
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
-      [ -n "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
+      [ -n "${{ inputs.archs }}" ] && archs="--build-arch ${{ inputs.archs }}"
       /ko-app/apko build \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.debug && '--debug' }} \
