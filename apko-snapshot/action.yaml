@@ -73,6 +73,11 @@ inputs:
     required: false
     default: 'false'
 
+  image_refs:
+    description: |
+      The value to pass to --image-refs.
+    default: /tmp/apko.images
+
 outputs:
   digest:
     value: ${{ steps.apko.outputs.digest }}
@@ -106,6 +111,7 @@ runs:
       with:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
+        image_refs: ${{ inputs.image_refs }}
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}
@@ -132,7 +138,7 @@ runs:
     - shell: bash
       run: |
         crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:${{ inputs.target-tag }}
-        
+
         for tag in $(echo ${{ inputs.additional-tags }} | sed "s/,/ /g")
         do
           crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:$tag
