@@ -89,7 +89,7 @@ runs:
       shell: bash
 
     - id: install-snyk
-      if: ${{ inputs.RUN_SNYK }} == "true"
+      if: inputs.RUN_SNYK == 'true'
       name: Run Snyk to check Docker image for vulnerabilities
       shell: bash
       env:
@@ -97,9 +97,9 @@ runs:
         SNYK_VERSION: ${{ inputs.SNYK_VERSION }}
       run: |
         set -ex
-        
+
         SNYK_DOWNLOAD="snyk-linux"
-        
+
         if [ "$RUNNER_OS" == "Linux" ]; then
           SNYK_DOWNLOAD="snyk-linux"
         elif [ "$RUNNER_OS" == "Windows" ]; then
@@ -110,16 +110,16 @@ runs:
           echo "$RUNNER_OS not supported"
           exit 1
         fi
-          
+
         curl -s -o snyk https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}
-        
+
         echo "SNYK_VERSION=${SNYK_VERSION}" >> $GITHUB_ENV
         echo "SNYK_URL=https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}" >> $GITHUB_ENV
-        
+
         chmod +x snyk
 
     - name: Run Snyk to check Docker image for vulnerabilities
-      if: ${{ inputs.RUN_SNYK }} == "true"
+      if: inputs.RUN_SNYK == 'true'
       shell: bash
       env:
         SNYK_TOKEN: ${{ inputs.SNYK_TOKEN }}
@@ -129,7 +129,7 @@ runs:
         --json-file-output=snyk.json >/dev/null || true
 
     - name: Cosign Attest Snyk results
-      if: ${{ inputs.RUN_SNYK }} == "true"
+      if: inputs.RUN_SNYK == 'true'
       shell: bash
       id: snyk-attest
       env:
@@ -139,7 +139,7 @@ runs:
 
         echo "Snyk SCANNER_URI: ${{ env.SNYK_URL }}"
         echo "Snyk SCANNER_VERSION: ${{ env.SNYK_VERSION }}"
-        
+
         cat > "${ATTESTATION}" <<EOF
         {
             "invocation": {
@@ -159,11 +159,11 @@ runs:
             }
         }
         EOF
-        
+
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
-        
+
         cosign attest --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
-        
+
 
     - name:  Scan image with AquaSec/Trivy
       uses: aquasecurity/trivy-action@0105373003c89c494a3f436bd5efc57f3ac1ca20 #v0.5.1
@@ -189,7 +189,7 @@ runs:
 
         echo "trivy SCANNER_URI: $SCANNER_URI"
         echo "trivy SCANNER_VERSION: $SCANNER_VERSION"
-        
+
         cat > "${ATTESTATION}" <<EOF
         {
             "invocation": {
@@ -209,11 +209,11 @@ runs:
             }
         }
         EOF
-             
+
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
-       
+
         cosign attest --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
-        
+
 
     - name: Scan image with Anchore/Grype
       id: grype-scan
@@ -233,10 +233,10 @@ runs:
 
         export SCANNER_URI=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq -r .runs[0].tool.driver.informationUri)
         export SCANNER_VERSION=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq -r .runs[0].tool.driver.version)
-        
+
         echo "grype SCANNER_URI: $SCANNER_URI"
         echo "grype SCANNER_VERSION: $SCANNER_VERSION"
-        
+
         cat > "${ATTESTATION}" <<EOF
         {
             "invocation": {
@@ -256,23 +256,26 @@ runs:
             }
         }
         EOF
-        
+
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
-        
+
         cosign attest --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
-            
+
 
     - name: High Level Scan report
       id: scan-report
       shell: bash
       run: |
- 
         GRYPE_COUNT=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')
         TRIVY_COUNT=$(cat trivy-results.sarif | jq '.runs[0].results | length')
-        SNYK_COUNT=$(cat snyk.json | jq .uniqueCount)
-        
+
+        SNYK_COUNT="n/a"
+        if [[ -f "snyk.json" ]]; then
+          SNYK_COUNT=$(cat snyk.json | jq .uniqueCount)
+        fi
+
         echo "SNYK_COUNT: $SNYK_COUNT, GRYPE_COUNT: $GRYPE_COUNT, TRIVY_COUNT: $TRIVY_COUNT"
-        
+
         echo "::set-output name=SNYK_COUNT::$SNYK_COUNT"
         echo "::set-output name=GRYPE_COUNT::$GRYPE_COUNT"
-        echo "::set-output name=TRIVY_COUNT::$TRIVY_COUNT"     
+        echo "::set-output name=TRIVY_COUNT::$TRIVY_COUNT"
