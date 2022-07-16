@@ -128,7 +128,7 @@ runs:
       env:
         COSIGN_EXPERIMENTAL: "true"
       run: |
-        cosign sign ${{ steps.apko.outputs.digest }} \
+        cosign sign $(cat ${{ inputs.image_refs }}) \
             -a sha=${{ github.sha }} \
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
