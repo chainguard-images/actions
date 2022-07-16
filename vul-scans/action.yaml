@@ -42,15 +42,25 @@ inputs:
     required: false
     default: "false"
 
-  SNYK_TOKEN:
-    description: |
-      SNYK Token for vul scanning
+  RUN_TRIVY:
+    description: Run trivy scan or not.
     required: true
+    default: "true"
+
+  RUN_GRYPE:
+    description: Run grype scan or not.
+    required: true
+    default: "true"
 
   RUN_SNYK:
     description: Run snyk scan or not, set SNYK_TOKEN as well
     required: true
     default: "true"
+
+  SNYK_TOKEN:
+    description: |
+      SNYK Token for vul scanning
+    required: true
 
   SNYK_VERSION:
     description: |
@@ -166,6 +176,7 @@ runs:
 
 
     - name:  Scan image with AquaSec/Trivy
+      if: inputs.RUN_TRIVY == 'true'
       uses: aquasecurity/trivy-action@0105373003c89c494a3f436bd5efc57f3ac1ca20 #v0.5.1
       id: trivy-scan
       with:
@@ -177,6 +188,7 @@ runs:
         severity: 'CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN'
 
     - name: Cosign Attest trivy results
+      if: inputs.RUN_TRIVY == 'true'
       shell: bash
       id: trivy-attest
       env:
@@ -216,6 +228,7 @@ runs:
 
 
     - name: Scan image with Anchore/Grype
+      if: inputs.RUN_GRYPE == 'true'
       id: grype-scan
       uses: anchore/scan-action@ecfd0e98932e57ea8f68f29c4f418fc41a8194db
       with:
@@ -224,6 +237,7 @@ runs:
         severity-cutoff: low
 
     - name: Cosign Attest Grype results
+      if: inputs.RUN_GRYPE == 'true'
       shell: bash
       id: grype-attest
       env:
@@ -266,11 +280,18 @@ runs:
       id: scan-report
       shell: bash
       run: |
-        GRYPE_COUNT=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')
-        TRIVY_COUNT=$(cat trivy-results.sarif | jq '.runs[0].results | length')
+        GRYPE_COUNT="n/a"
+        if [ "${{ inputs.RUN_GRYPE }}" = "true" ]; then
+          GRYPE_COUNT=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')
+        fi
+
+        TRIVY_COUNT="n/a"
+        if [ "${{ inputs.RUN_TRIVY }}" = "true" ]; then
+          TRIVY_COUNT=$(cat trivy-results.sarif | jq '.runs[0].results | length')
+        fi
 
         SNYK_COUNT="n/a"
-        if [[ -f "snyk.json" ]]; then
+        if [ "${{ inputs.RUN_SNYK }}" = "true" ]; then
           SNYK_COUNT=$(cat snyk.json | jq .uniqueCount)
         fi
 
