@@ -76,7 +76,7 @@ inputs:
   image_refs:
     description: |
       The value to pass to --image-refs.
-    default: /tmp/apko.images
+    default: apko.images
 
 outputs:
   digest:
