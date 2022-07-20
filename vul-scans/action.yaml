@@ -300,3 +300,24 @@ runs:
         echo "::set-output name=SNYK_COUNT::$SNYK_COUNT"
         echo "::set-output name=GRYPE_COUNT::$GRYPE_COUNT"
         echo "::set-output name=TRIVY_COUNT::$TRIVY_COUNT"
+
+    - name: Cue Verify Attestation
+      id: cue-verify
+      shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+       
+        cat > vulnz.cue <<EOF
+          import (
+          "list"
+          "strings"
+          "strconv"
+          )
+        
+          predicateType: "cosign.sigstore.dev/attestation/vuln/v1"
+        EOF
+        
+        export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
+        
+        cosign verify-attestation --type vuln --policy vulnz.cue ${{ inputs.image }}
