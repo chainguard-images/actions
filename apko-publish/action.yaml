@@ -29,7 +29,7 @@ inputs:
 
   image_refs:
     description: |
-      The value to pass to --image-refs.
+      (DEPRECATED) The value to pass to --image-refs.
     default: /tmp/apko.images
 
   keyring-append:
@@ -75,6 +75,9 @@ outputs:
   digest:
     description: |
       The digest of the published container image.
+  image-refs:
+    description: |
+      All the image and index refs by digest that were built, as a JSON array.
 
 runs:
   using: docker
@@ -103,3 +106,6 @@ runs:
         --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})
+      IMAGE_REFS=$(cat /tmp/apko.images | sed 's/$/\n/g' | grep -v '^$' | jq -R -s -c 'split("\n")[:-1]')
+      echo $IMAGE_REFS
+      echo ::set-output name=image-refs::$IMAGE_REFS

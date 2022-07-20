@@ -75,8 +75,8 @@ inputs:
 
   image_refs:
     description: |
-      The value to pass to --image-refs.
-    default: apko.images
+      (DEPRECATED) The value to pass to --image-refs.
+    default: /tmp/apko.images
   
   automount-src:
     description: |
@@ -93,6 +93,10 @@ outputs:
     value: ${{ steps.apko.outputs.digest }}
     description: |
       The digest of the published container image.
+  image-refs:
+    value: ${{ steps.apko.outputs.image-refs }}
+    description: |
+      All the image and index refs by digest that were built, newline delimited.
 
 runs:
   using: composite
@@ -121,7 +125,7 @@ runs:
       with:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
-        image_refs: ${{ inputs.image_refs }}
+        images_refs: ${{ inputs.image_refs }}
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}
@@ -140,7 +144,13 @@ runs:
       env:
         COSIGN_EXPERIMENTAL: "true"
       run: |
-        cosign sign $(cat ${{ inputs.image_refs }}) \
+        imgs=echo "${{ steps.apko.outputs.image-refs }}" | jq -r '.[]'
+        if [[ ! -z ${{ inputs.image_refs }} ]]; then
+          imgs=$(cat ${{ inputs.image_refs }})
+        fi
+        echo signing $imgs
+
+        cosign sign $imgs \
             -a sha=${{ github.sha }} \
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
