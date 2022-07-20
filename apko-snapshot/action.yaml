@@ -61,6 +61,12 @@ inputs:
     required: false
     default: ''
 
+  source-date-epoch:
+    description: |
+      The UNIX timestamp to use as the source date when building an image.
+      This is set as the SOURCE_DATE_EPOCH environment variable.
+    default: ''
+
   additional-tags:
     description: |
       Additional tags for the final image.
@@ -101,7 +107,6 @@ runs:
       id: snapshot-date
       run: |
         echo ::set-output name=date::$(date -u +%Y%m%d)
-        echo ::set-output name=epoch::$(date -u +%s)
       shell: bash
 
     # Only publish the versioned tag to start.  After we have signed and
@@ -112,7 +117,7 @@ runs:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         image_refs: ${{ inputs.image_refs }}
-        source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
+        source-date-epoch: ${{ inputs.source-date-epoch }}
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}
         archs: ${{ inputs.archs }}
