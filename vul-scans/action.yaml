@@ -280,17 +280,17 @@ runs:
       id: scan-report
       shell: bash
       run: |
-        GRYPE_COUNT="n/a"
+        GRYPE_COUNT="0"
         if [ "${{ inputs.RUN_GRYPE }}" = "true" ]; then
           GRYPE_COUNT=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')
         fi
 
-        TRIVY_COUNT="n/a"
+        TRIVY_COUNT="0"
         if [ "${{ inputs.RUN_TRIVY }}" = "true" ]; then
           TRIVY_COUNT=$(cat trivy-results.sarif | jq '.runs[0].results | length')
         fi
 
-        SNYK_COUNT="n/a"
+        SNYK_COUNT="0"
         if [ "${{ inputs.RUN_SNYK }}" = "true" ]; then
           SNYK_COUNT=$(cat snyk.json | jq .uniqueCount)
         fi
