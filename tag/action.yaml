@@ -1,0 +1,51 @@
+# Copyright 2022 The Distroless Authors
+# SPDX-License-Identifier: Apache-2.0
+
+name: 'Add additonal tags to image'
+description: |
+  This action discovers additional tags for the distroless image
+  and adds them to the image.
+
+inputs:
+  distroless_image:
+    description: |
+      The distroless image to add tags to
+    required: true
+    default: ''
+
+  docker_image:
+    description: |
+      The docker image to compare the distroless image against.
+    default: ''
+    required: true
+
+  docker_image_tag:
+    description: |
+      Tag for the docker image.
+    default: ''
+    required: true
+
+
+runs:
+  using: composite
+  steps:
+    - uses: imjasonh/setup-crane@v0.1
+    - name: Get additional tags and retag
+      shell: bash
+      run: |
+        TAGS=$(crane ls ${{ inputs.docker_image }})
+        TAGGED_IMAGES=""
+        DOCKER_DIGEST=$(crane digest ${{ inputs.docker_image }}:${{ inputs.docker_image_tag }})
+        for tag in $TAGS 
+        do
+            digest=$(crane digest ${{ inputs.docker_image }}:$tag)
+            if [[ "$digest" = "$DOCKER_DIGEST"  ]]; then
+                echo "Tag distroless image with $tag"
+                crane tag ${{ inputs.distroless_image }} $tag
+                TAGGED_IMAGES=$TAGGED_IMAGES,$tag
+            else
+                echo "Skipping $tag"
+            fi
+        done 
+
+        echo "Added these additional tags: $TAGGED_IMAGES"
