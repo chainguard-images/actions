@@ -77,6 +77,16 @@ inputs:
     description: |
       The value to pass to --image-refs.
     default: apko.images
+  
+  automount-src:
+    description: |
+      In subsequent steps, if this directory is found, create a copy at automount-dest (inside container)
+    default: ${{ github.workspace }}/.apko-automount
+
+  automount-dest:
+    description: |
+      In subsequent steps, if automount-src is found, create a copy at this location (inside container)
+    default: /work
 
 outputs:
   digest:
@@ -117,6 +127,8 @@ runs:
         keyring-append: ${{ inputs.keyring-append }}
         archs: ${{ inputs.archs }}
         debug: ${{ inputs.debug }}
+        automount-src: ${{ inputs.automount-src }}
+        automount-dest: ${{ inputs.automount-dest }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:

@@ -47,6 +47,16 @@ inputs:
     required: false
     default: false
 
+  automount-src:
+    description: |
+      If this directory is found, create a copy at automount-dest (inside container)
+    default: ${{ github.workspace }}/.apko-automount
+
+  automount-dest:
+    description: |
+      If automount-src is found, create a copy at this location (inside container)
+    default: /work
+
 runs:
   using: docker
   image:  "docker://ghcr.io/chainguard-dev/apko:canary"
@@ -55,6 +65,10 @@ runs:
     - '-c'
     - |
       set -o errexit
+      if [ -d "${{ inputs.automount-src }}" ]; then
+        echo "Creating copy of ${{ inputs.automount-src }} at ${{ inputs.automount-dest }}"
+        cp -r "${{ inputs.automount-src }}" "${{ inputs.automount-dest }}"
+      fi
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
       [ -n "${{ inputs.archs }}" ] && archs="--build-arch ${{ inputs.archs }}"
