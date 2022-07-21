@@ -309,12 +309,6 @@ runs:
       run: |
        
         cat > vulnz.cue <<EOF
-          import (
-          "list"
-          "strings"
-          "strconv"
-          )
-        
           predicateType: "cosign.sigstore.dev/attestation/vuln/v1"
         EOF
         
