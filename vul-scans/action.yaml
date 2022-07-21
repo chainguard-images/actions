@@ -30,6 +30,11 @@ inputs:
     required: false
     default: ${{ github.token }}
 
+  DOCKER_LOGIN:
+    description: Login for private regsitries
+    required: false
+    default: false
+
   debug:
     description: |
       Enable debug logging.
@@ -88,6 +93,7 @@ runs:
         cosign-release: v1.9.0
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
+      if: inputs.DOCKER_LOGIN == 'true'
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}
