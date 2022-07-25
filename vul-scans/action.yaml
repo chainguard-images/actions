@@ -33,7 +33,7 @@ inputs:
   DOCKER_LOGIN:
     description: Login for private regsitries
     required: false
-    default: false
+    default: true
 
   debug:
     description: |
