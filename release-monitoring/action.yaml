@@ -1,0 +1,55 @@
+# Copyright 2022 Chainguard, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+name: 'Fetch versions from release-monitoring.org'
+description: |
+  This action returns a list of versions for a specifc project
+  that is available on release-monitoring.org.
+
+inputs:
+  project-id:
+    description: |
+      The unique ID of project on release-monitoring.org
+    required: true
+  api-token:
+    description: |
+      API token for release-monitoring.org
+    required: false
+
+outputs:
+  latest-version:
+    description: |
+      The latest version of the project
+    value: ${{ steps.release-monitoring.outputs.latest-version }}
+  stable-versions:
+    description: |
+      A comma-separated list of all stable versions of the project
+    value: ${{ steps.release-monitoring.outputs.stable-versions }}
+  all-versions:
+    description: |
+      A comma-separated list of all versions of the project
+    value: ${{ steps.release-monitoring.outputs.all-versions }}
+
+runs:
+  using: 'composite'
+
+  steps:
+    - name: List project versions from release-monitoring.org
+      id: release-monitoring
+      shell: bash
+      run: |
+        set -x
+        if [[ "${{ inputs.api-token }}" == "" ]]; then
+          echo "Warning: running without a registered API token"
+        fi
+        TMP="$(mktemp /tmp/release-monitoring-action.XXXXXX)"
+        trap "rm -rf ${TMP}" EXIT
+        curl --fail -L -v -H "Authorization: Bearer ${{ inputs.api-token }}" \
+          "https://release-monitoring.org/api/v2/versions/?project_id=${{ inputs.project-id }}" \
+          > "${TMP}"
+        echo "Response:"
+        echo "--------"
+        cat "${TMP}"
+        echo "::set-output name=latest-version::$(cat "${TMP}" | jq -r .latest_version)"
+        echo "::set-output name=stable-versions::$(cat "${TMP}" | jq -r '.stable_versions | join(",")')"
+        echo "::set-output name=all-versions::$(cat "${TMP}" | jq -r '.versions | join(",")')"
