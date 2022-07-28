@@ -94,6 +94,16 @@ inputs:
       In subsequent steps, if automount-src is found, create a copy at this location (inside container)
     default: /work
 
+  FULCIO_URL:
+    required: false
+    description: address of sigstore PKI server (default "https://fulcio.sigstore.dev")
+    default: "https://fulcio.sigstore.dev"
+
+  REKOR_URL:
+    required: false
+    description: address of rekor STL server (default "https://rekor.sigstore.dev")
+    default: "https://rekor.sigstore.dev"
+
 outputs:
   digest:
     value: ${{ steps.apko.outputs.digest }}
@@ -148,6 +158,7 @@ runs:
         COSIGN_EXPERIMENTAL: "true"
       run: |
         cosign sign $(cat ${{ inputs.image_refs }}) \
+            --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
             -a sha=${{ github.sha }} \
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}

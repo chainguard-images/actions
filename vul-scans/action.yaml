@@ -73,6 +73,16 @@ inputs:
     required: false
     default: "v1.966.0"
 
+  FULCIO_URL:
+    required: false
+    description: address of sigstore PKI server (default "https://fulcio.sigstore.dev")
+    default: "https://fulcio.sigstore.dev"
+
+  REKOR_URL:
+    required: false
+    description:   address of rekor STL server (default "https://rekor.sigstore.dev")
+    default: "https://rekor.sigstore.dev"
+
 outputs:
   TRIVY_COUNT:
     description: Number of vulnerables in trivy scan
@@ -178,7 +188,8 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
+        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
+        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
 
 
     - name:  Scan image with AquaSec/Trivy
@@ -230,7 +241,8 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
+        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
+        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
 
 
     - name: Scan image with Anchore/Grype
@@ -279,7 +291,8 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
+        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
+        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
 
 
     - name: High Level Scan report
@@ -320,4 +333,5 @@ runs:
         
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
         
-        cosign verify-attestation --type vuln --policy vulnz.cue ${{ inputs.image }}
+        cosign verify-attestation --rekor-url ${{ inputs.REKOR_URL }} \
+        --type vuln --policy vulnz.cue ${{ inputs.image }}
