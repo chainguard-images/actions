@@ -73,7 +73,7 @@ inputs:
     required: false
     default: "v1.966.0"
 
-  FUCLIO_URL:
+  FULCIO_URL:
     required: false
     description: address of sigstore PKI server (default "https://fulcio.sigstore.dev")
     default: "https://fulcio.sigstore.dev"

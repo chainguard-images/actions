@@ -94,7 +94,7 @@ inputs:
       In subsequent steps, if automount-src is found, create a copy at this location (inside container)
     default: /work
 
-  FUCLIO_URL:
+  FULCIO_URL:
     required: false
     description: address of sigstore PKI server (default "https://fulcio.sigstore.dev")
     default: "https://fulcio.sigstore.dev"
