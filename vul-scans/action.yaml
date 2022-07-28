@@ -188,7 +188,7 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
+        cosign attest --force --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
         --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
 
 
@@ -241,7 +241,7 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
+        cosign attest --force --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
         --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
 
 
@@ -291,8 +291,8 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
-        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
+        cosign attest --force --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
+        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }} 
 
 
     - name: High Level Scan report
