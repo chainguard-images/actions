@@ -22,6 +22,9 @@ inputs:
       The repository owner's GitHub username.
     default: ${{ github.repository_owner }}
 
+  repository:
+    default: ${{ github.repository }}
+
   token:
     description: |
       The repository owner's GitHub token.
@@ -71,6 +74,12 @@ inputs:
       If automount-src is found, create a copy at this location (inside container)
     default: /work
 
+  package-version-tag:
+    description: |
+      apko can tag the final image with the version of the corresponding apk package passed in here.
+    required: false
+    default: ''
+
 outputs:
   digest:
     description: |
@@ -83,6 +92,7 @@ runs:
     # Set up go-containerregistry's GitHub keychain.
     GITHUB_ACTOR: ${{ inputs.repository_owner }}
     GITHUB_TOKEN: ${{ inputs.token }}
+    REPOSITORY: ${{ inputs.repository }}
   entrypoint: /bin/sh
   args:
     - '-c'
@@ -95,11 +105,18 @@ runs:
       fi
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
-      [ -n "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
+      [ -n  "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
+      
+      packageVersionTag="--package-version-tag=${{ inputs.package-version-tag }}"
+      if [ "${{ inputs.package-version-tag }}" == "" ]; then
+        repo=$(echo $REPOSITORY | cut -d'/' -f2)
+        packageVersionTag="--package-version-tag=$repo"
+      fi
+
       export DIGEST_FILE=$(mktemp)
       /ko-app/apko publish \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
-        ${{ inputs.debug && '--debug' }} \
-        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs | tee ${DIGEST_FILE}
+        '--debug' \
+        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs $packageVersionTag | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})

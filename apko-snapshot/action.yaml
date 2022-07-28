@@ -67,6 +67,12 @@ inputs:
     required: false
     default: ''
 
+  package-version-tag:
+    description: |
+      apko can tag the final image with the version of the corresponding apk package passed in here.
+    required: false
+    default: ''
+
   debug:
     description: |
       Enable debug logging.
@@ -129,6 +135,7 @@ runs:
         debug: ${{ inputs.debug }}
         automount-src: ${{ inputs.automount-src }}
         automount-dest: ${{ inputs.automount-dest }}
+        package-version-tag: ${{ inputs.package-version-tag }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:
