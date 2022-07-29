@@ -40,7 +40,13 @@ runs:
       shell: bash
       run: |
         # For images tagged with alpine package version, we want to trim the `-rx` off the tag and retag
-        TAGS=$(crane ls ${{ inputs.distroless_image }})
+        TAGS=$(crane ls ${{ inputs.distroless_image }} || true)
+        if [[ $TAGS == "" ]]; then
+          echo "Error getting tags, exiting"
+          exit 0
+        fi
+
+        LATEST_DIGEST=$(crane digest ${{ inputs.distroless_image }}:latest)
         ALPINE_TAG_REGEX="^.*-r[0-9]{1}$"
 
         for tag in $TAGS
@@ -52,13 +58,16 @@ runs:
 
             newTag=$(echo $tag | cut -d'-' -f1)
 
-            if [[ $TAGS == *"$newTag\n"* ]]; then
-                echo "$newTag already exists, skipping"
+            NEW_TAG_DIGEST=$(crane digest ${{ inputs.distroless_image }}:$tag)
+            if [[ ! $NEW_TAG_DIGEST == $LATEST_DIGEST ]]; then
+                echo "${{ inputs.distroless_image }}:$tag is not the latest image, skipping"
                 continue
             fi
 
             # Otherwise, tag the image with the new tag
             crane tag ${{ inputs.distroless_image }}:$tag $newTag
+
+            echo "Setting trimmed_tag output to $newTag"
             echo "::set-output name=trimmed_tag::$newTag"
             break
         done
