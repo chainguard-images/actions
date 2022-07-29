@@ -25,17 +25,61 @@ inputs:
     default: ''
     required: true
 
+outputs:
+  trimmed_tag:
+    description: |
+      The trimmed package version tag to compare Dockerhub tags against 
 
 runs:
   using: composite
   steps:
     - uses: imjasonh/setup-crane@v0.1
+    - name: Trim alpine version tag
+      id: trim
+      if: ${{ inputs.docker_image_tag }} == ""
+      shell: bash
+      run: |
+        # For images tagged with alpine package version, we want to trim the `-rx` off the tag and retag
+        TAGS=$(crane ls ${{ inputs.distroless_image }})
+        ALPINE_TAG_REGEX="^.*-r[0-9]{1}$"
+
+        for tag in $TAGS
+        do
+            if [[ ! $tag =~ $ALPINE_TAG_REGEX ]]; then
+                continue
+            fi
+            echo "Looking at $tag"
+
+            newTag=$(echo $tag | cut -d'-' -f1)
+
+            if [[ $TAGS == *"$newTag\n"* ]]; then
+                echo "$newTag already exists, skipping"
+                continue
+            fi
+
+            # Otherwise, tag the image with the new tag
+            crane tag ${{ inputs.distroless_image }}:$tag $newTag
+            echo "::set-output name=trimmed_tag::$newTag"
+            break
+        done
+
     - name: Get additional tags and retag
       shell: bash
       run: |
         TAGS=$(crane ls ${{ inputs.docker_image }})
         TAGGED_IMAGES=""
-        DOCKER_DIGEST=$(crane digest ${{ inputs.docker_image }}:${{ inputs.docker_image_tag }})
+
+        DOCKER_IMAGE_TAG=${{ inputs.docker_image_tag }}
+        if [[ $DOCKER_IMAGE_TAG == "" ]]; then
+            DOCKER_IMAGE_TAG=${{ steps.trim.outputs.trimmed_tag }}
+        fi
+
+        DOCKER_DIGEST=$(crane digest ${{ inputs.docker_image }}:$DOCKER_IMAGE_TAG || true)
+        if [[ $DOCKER_DIGEST == "" ]]; then
+            echo "${{ inputs.docker_image }}:$DOCKER_IMAGE_TAG doesn't exist, skipping retagging"
+            exit 0
+        fi
+
         for tag in $TAGS 
         do
             digest=$(crane digest ${{ inputs.docker_image }}:$tag)
