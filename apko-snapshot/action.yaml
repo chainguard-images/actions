@@ -83,7 +83,7 @@ inputs:
     description: |
       The value to pass to --image-refs.
     default: apko.images
-  
+
   automount-src:
     description: |
       In subsequent steps, if this directory is found, create a copy at automount-dest (inside container)
@@ -114,14 +114,14 @@ runs:
   using: composite
   steps:
     - name: Setup cosign
-      uses: sigstore/cosign-installer@main
+      uses: sigstore/cosign-installer@f3c664df7af409cb4873aa5068053ba9d61a57b6 # v2.6.0
       with:
-        cosign-release: v1.9.0
+        cosign-release: v1.11.1
 
-    - uses: imjasonh/setup-crane@v0.1
+    - uses: imjasonh/setup-crane@v0.2
 
     - name: Setup QEMU
-      uses: docker/setup-qemu-action@v1.2.0
+      uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # v2.0.0
 
     - name: Generate snapshot date
       id: snapshot-date
