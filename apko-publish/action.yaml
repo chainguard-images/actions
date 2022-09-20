@@ -80,6 +80,12 @@ inputs:
     required: false
     default: ''
 
+  tag-suffix:
+    description: |
+      Suffix to use with the package-version-tag feature, if any.
+    required: false
+    default: ''
+
 outputs:
   digest:
     description: |
@@ -113,10 +119,12 @@ runs:
         packageVersionTag="--package-version-tag=$repo"
       fi
 
+      tagSuffix="--tag-suffix=${{ inputs.tag-suffix }}"
+
       export DIGEST_FILE=$(mktemp)
       /ko-app/apko publish \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         '--debug' \
-        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs $packageVersionTag | tee ${DIGEST_FILE}
+        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs $packageVersionTag $tagSuffix | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})
