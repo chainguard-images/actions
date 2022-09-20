@@ -73,6 +73,12 @@ inputs:
     required: false
     default: ''
 
+  tag-suffix:
+    description: |
+      Suffix to use with the package-version-tag feature, if any.
+    required: false
+    default: ''
+
   debug:
     description: |
       Enable debug logging.
@@ -146,6 +152,7 @@ runs:
         automount-src: ${{ inputs.automount-src }}
         automount-dest: ${{ inputs.automount-dest }}
         package-version-tag: ${{ inputs.package-version-tag }}
+        tag-suffix: ${{ inputs.tag-suffix }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:
