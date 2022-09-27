@@ -25,80 +25,45 @@ inputs:
     default: ''
     required: true
 
-outputs:
-  trimmed_tag:
+  registry:
     description: |
-      The trimmed package version tag to compare Dockerhub tags against 
+      Which registry to use.
+    default: ghcr.io
+    required: true
+
+  username:
+    description: |
+      The username to use for docker login step.
+    required: true
+    default: ${{ github.repository_owner }}
+
+  token:
+    description: |
+      The token to use for docker login step.
+    required: true
+    default: ${{ github.token }}
 
 runs:
   using: composite
   steps:
+    - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3.0.2
+      with:
+        repository: ${{ github.repository_owner }}/actions
     - uses: imjasonh/setup-crane@v0.1
-    - name: Trim alpine version tag
-      id: trim
-      if: ${{ inputs.docker_image_tag }} == ""
+    - name: Set up Go
+      uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # v3.3.0
+      with:
+        go-version: 1.18
+
+    - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.token }}
+
+    - name: Run tagging script
       shell: bash
       run: |
-        # For images tagged with alpine package version, we want to trim the `-rx` off the tag and retag
-        TAGS=$(crane ls ${{ inputs.distroless_image }} || true)
-        if [[ $TAGS == "" ]]; then
-          echo "Error getting tags, exiting"
-          exit 0
-        fi
-
-        LATEST_DIGEST=$(crane digest ${{ inputs.distroless_image }}:latest)
-        ALPINE_TAG_REGEX="^.*-r[0-9]{1}$"
-
-        for tag in $TAGS
-        do
-            if [[ ! $tag =~ $ALPINE_TAG_REGEX ]]; then
-                continue
-            fi
-            echo "Looking at $tag"
-
-            newTag=$(echo $tag | cut -d'-' -f1)
-
-            NEW_TAG_DIGEST=$(crane digest ${{ inputs.distroless_image }}:$tag)
-            if [[ ! $NEW_TAG_DIGEST == $LATEST_DIGEST ]]; then
-                echo "${{ inputs.distroless_image }}:$tag is not the latest image, skipping"
-                continue
-            fi
-
-            # Otherwise, tag the image with the new tag
-            crane tag ${{ inputs.distroless_image }}:$tag $newTag
-
-            echo "Setting trimmed_tag output to $newTag"
-            echo "::set-output name=trimmed_tag::$newTag"
-            break
-        done
-
-    - name: Get additional tags and retag
-      shell: bash
-      run: |
-        TAGS=$(crane ls ${{ inputs.docker_image }})
-        TAGGED_IMAGES=""
-
-        DOCKER_IMAGE_TAG=${{ inputs.docker_image_tag }}
-        if [[ $DOCKER_IMAGE_TAG == "" ]]; then
-            DOCKER_IMAGE_TAG=${{ steps.trim.outputs.trimmed_tag }}
-        fi
-
-        DOCKER_DIGEST=$(crane digest ${{ inputs.docker_image }}:$DOCKER_IMAGE_TAG || true)
-        if [[ $DOCKER_DIGEST == "" ]]; then
-            echo "${{ inputs.docker_image }}:$DOCKER_IMAGE_TAG doesn't exist, skipping retagging"
-            exit 0
-        fi
-
-        for tag in $TAGS 
-        do
-            digest=$(crane digest ${{ inputs.docker_image }}:$tag)
-            if [[ "$digest" = "$DOCKER_DIGEST"  ]]; then
-                echo "Tag distroless image with $tag"
-                crane tag ${{ inputs.distroless_image }} $tag
-                TAGGED_IMAGES=$TAGGED_IMAGES,$tag
-            else
-                echo "Skipping $tag"
-            fi
-        done 
-
-        echo "Added these additional tags: $TAGGED_IMAGES"
+        cd tag
+        go build -o tag main.go
+        ./tag -distroless-image="${{ inputs.distroless_image }}" -docker-image-tag="${{ inputs.docker_image_tag }}" -docker-image="${{ inputs.docker_image }}"
