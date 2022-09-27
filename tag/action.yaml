@@ -64,5 +64,5 @@ runs:
     - name: Run tagging script
       shell: bash
       run: |
-        (cd tag && go build -o ../tag main.go)
-        ./tag -distroless-image="${{ inputs.distroless_image }}" -docker-image-tag="${{ inputs.docker_image_tag }}" -docker-image="${{ inputs.docker_image }}"
+        (cd tag && go build -o ../tag-run main.go)
+        ./tag-run -distroless-image="${{ inputs.distroless_image }}" -docker-image-tag="${{ inputs.docker_image_tag }}" -docker-image="${{ inputs.docker_image }}"
