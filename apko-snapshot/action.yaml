@@ -121,8 +121,6 @@ runs:
   steps:
     - name: Setup cosign
       uses: sigstore/cosign-installer@main
-      with:
-        cosign-release: v1.9.0
 
     - uses: imjasonh/setup-crane@v0.1
 
