@@ -28,12 +28,12 @@ inputs:
 outputs:
   trimmed_tag:
     description: |
-      The trimmed package version tag to compare Dockerhub tags against 
+      The trimmed package version tag to compare Dockerhub tags against
 
 runs:
   using: composite
   steps:
-    - uses: imjasonh/setup-crane@v0.1
+    - uses: imjasonh/setup-crane@v0.2
     - name: Trim alpine version tag
       id: trim
       if: ${{ inputs.docker_image_tag }} == ""
@@ -89,7 +89,7 @@ runs:
             exit 0
         fi
 
-        for tag in $TAGS 
+        for tag in $TAGS
         do
             digest=$(crane digest ${{ inputs.docker_image }}:$tag)
             if [[ "$digest" = "$DOCKER_DIGEST"  ]]; then
@@ -99,6 +99,6 @@ runs:
             else
                 echo "Skipping $tag"
             fi
-        done 
+        done
 
         echo "Added these additional tags: $TAGGED_IMAGES"

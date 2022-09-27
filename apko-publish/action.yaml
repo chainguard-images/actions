@@ -112,7 +112,7 @@ runs:
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
       [ -n  "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
-      
+
       packageVersionTag="--package-version-tag=${{ inputs.package-version-tag }}"
       if [ "${{ inputs.package-version-tag }}" == "" ]; then
         repo=$(echo $REPOSITORY | cut -d'/' -f2)

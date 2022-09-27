@@ -98,9 +98,9 @@ runs:
   using: composite
   steps:
     - name: Setup cosign
-      uses: sigstore/cosign-installer@48866aa521d8bf870604709cd43ec2f602d03ff2 #v2.4.1
+      uses: sigstore/cosign-installer@f3c664df7af409cb4873aa5068053ba9d61a57b6 # v2.6.0
       with:
-        cosign-release: v1.9.0
+        cosign-release: v1.11.1
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       if: inputs.DOCKER_LOGIN == 'true'
@@ -292,7 +292,7 @@ runs:
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
         cosign attest --force --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
-        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }} 
+        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
 
 
     - name: High Level Scan report
@@ -326,12 +326,12 @@ runs:
       env:
         COSIGN_EXPERIMENTAL: "true"
       run: |
-       
+
         cat > vulnz.cue <<EOF
           predicateType: "cosign.sigstore.dev/attestation/vuln/v1"
         EOF
-        
+
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
-        
+
         cosign verify-attestation --rekor-url ${{ inputs.REKOR_URL }} \
         --type vuln --policy vulnz.cue ${{ inputs.image }}
