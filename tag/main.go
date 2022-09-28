@@ -23,12 +23,14 @@ var (
 	distrolessImage string
 	dockerImageTag  string
 	dockerImage     string
+	excludedTags    string
 )
 
 func init() {
 	flag.StringVar(&distrolessImage, "distroless-image", "", "Distroless image to tag")
 	flag.StringVar(&dockerImageTag, "docker-image-tag", "", "Docker image tag to match against")
 	flag.StringVar(&dockerImage, "docker-image", "", "Docker image to compare against")
+	flag.StringVar(&excludedTags, "excluded-tags", "", "Comma separated list of tag regexes to ignore")
 	flag.Parse()
 }
 
@@ -132,11 +134,21 @@ func additionalTags(dockerImageDigest string) ([]string, error) {
 	fmt.Fprintf(os.Stdout, "There are %d tags\n", len(tags))
 
 	waitChan := make(chan struct{}, maxGoRoutines)
+	excludedRegexs, err := excludedTagRegexps()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting excluded regexes")
+	}
 
 	for _, t := range tags {
 		waitChan <- struct{}{}
 		go func(t string) {
 			defer wg.Done()
+			defer func() {
+				<-waitChan
+			}()
+			if excludeAdditionalTag(t, excludedRegexs) {
+				return
+			}
 			digest, err := crane.Digest(fmt.Sprintf("%s:%s", dockerImage, t))
 			if err != nil {
 				fmt.Fprintf(os.Stdout, "WARN: error getting digest, skipping: %v\n", err)
@@ -145,13 +157,35 @@ func additionalTags(dockerImageDigest string) ([]string, error) {
 			if digest == dockerImageDigest {
 				fmt.Fprintf(os.Stdout, "Found matching tag %s\n", t)
 				at = append(at, t)
-			} else {
-				fmt.Println("skipping", t)
 			}
-			<-waitChan
 		}(t)
 	}
 
 	wg.Wait()
 	return at, nil
+}
+
+func excludeAdditionalTag(tag string, regexps []*regexp.Regexp) bool {
+	for _, r := range regexps {
+		if r.Match([]byte(tag)) {
+			return true
+		}
+	}
+	return false
+}
+
+func excludedTagRegexps() ([]*regexp.Regexp, error) {
+	if excludedTags == "" {
+		return nil, nil
+	}
+	var regexps []*regexp.Regexp
+	sep := strings.Split(excludedTags, ",")
+	for _, s := range sep {
+		regex, err := regexp.Compile(s)
+		if err != nil {
+			return nil, errors.Wrapf(err, "compile regex %s", s)
+		}
+		regexps = append(regexps, regex)
+	}
+	return regexps, nil
 }
