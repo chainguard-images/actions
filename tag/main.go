@@ -100,7 +100,8 @@ func getDockerImageTag() (string, error) {
 		newImage := fmt.Sprintf("%s:%s", distrolessImage, tag)
 		newDigest, err := crane.Digest(newImage)
 		if err != nil {
-			return "", err
+			fmt.Fprintf(os.Stdout, "WARN: error getting digest for %s, skipping: %v\n", newImage, err)
+			continue
 		}
 		if newDigest != latestDigest {
 			fmt.Println(tag, "is not the latest digest, skipping")
