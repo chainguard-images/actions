@@ -23,6 +23,11 @@ inputs:
       The architectures to build for.
     default: ''
 
+  sboms:
+    description: |
+      The sbom formats to produce. Either SPDX or CycloneDX.
+    default: ''
+
   source-date-epoch:
     description: |
       The UNIX timestamp to use as the source date when building an image.
@@ -72,8 +77,9 @@ runs:
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
       [ -n "${{ inputs.archs }}" ] && archs="--build-arch ${{ inputs.archs }}"
+      [ -n "${{ inputs.sboms }}" ] && sboms="--sbom-formats ${{ inputs.sboms }}"
       /ko-app/apko build \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.debug && '--debug' }} \
-        ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $archs
+        ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $archs $sboms
       echo EXIT CODE: $?
