@@ -24,6 +24,7 @@ var (
 	dockerImageTag  string
 	dockerImage     string
 	excludedTags    string
+	dryRun          bool
 )
 
 func init() {
@@ -31,6 +32,7 @@ func init() {
 	flag.StringVar(&dockerImageTag, "docker-image-tag", "", "Docker image tag to match against")
 	flag.StringVar(&dockerImage, "docker-image", "", "Docker image to compare against")
 	flag.StringVar(&excludedTags, "excluded-tags", "", "Comma separated list of tag regexes to ignore")
+	flag.BoolVar(&dryRun, "dry-run", false, "Do not attempt to publish new tags")
 	flag.Parse()
 }
 
@@ -74,8 +76,12 @@ func tag() error {
 	fmt.Println("Additional tags: ", at)
 	for _, t := range at {
 		fmt.Fprintf(os.Stdout, "Tagging %s with %s\n", distrolessImage, t)
-		if err := crane.Tag(distrolessImageTagged, t); err != nil {
-			return err
+		if dryRun {
+			fmt.Println("WARN: dry-run mode enabled, not tagging")
+		} else {
+			if err := crane.Tag(distrolessImageTagged, t); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -94,9 +100,24 @@ func getDockerImageTag() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "compile regex")
 	}
+	excludedRegexs, err := excludedTagRegexps()
+	if err != nil {
+		return "", errors.Wrap(err, "getting excluded regexes")
+	}
 	for _, tag := range tags {
 		if !regex.Match([]byte(tag)) {
 			fmt.Println("Skipping", tag)
+			continue
+		}
+		var exclude bool
+		for _, excludedRegex := range excludedRegexs {
+			if excludedRegex.Match([]byte(tag)) {
+				fmt.Printf("Skipping %s (matched regex %s)\n", tag, excludedRegex)
+				exclude = true
+				break
+			}
+		}
+		if exclude {
 			continue
 		}
 		newImage := fmt.Sprintf("%s:%s", distrolessImage, tag)
@@ -110,8 +131,12 @@ func getDockerImageTag() (string, error) {
 			continue
 		}
 		newTag := strings.Split(tag, "-")[0]
-		if err := crane.Tag(fmt.Sprintf("%s:%s", distrolessImage, tag), newTag); err != nil {
-			return "", errors.Wrap(err, "tagging image")
+		if dryRun {
+			fmt.Println("WARN: dry-run mode enabled, not tagging")
+		} else {
+			if err := crane.Tag(fmt.Sprintf("%s:%s", distrolessImage, tag), newTag); err != nil {
+				return "", errors.Wrap(err, "tagging image")
+			}
 		}
 		return newTag, nil
 	}
