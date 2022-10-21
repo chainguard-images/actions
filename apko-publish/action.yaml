@@ -86,6 +86,12 @@ inputs:
     required: false
     default: ''
 
+  sbom-path:
+    description: |
+      path to write SBOMs
+    required: false
+    default: ''
+
 outputs:
   digest:
     description: |
@@ -112,6 +118,7 @@ runs:
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
       [ -n  "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
+      [ -n  "${{ inputs.sbom-path }}" ] && sbomPath="--sbom-path ${{ inputs.sbom-path }}"
 
       packageVersionTag="--package-version-tag=${{ inputs.package-version-tag }}"
       if [ "${{ inputs.package-version-tag }}" == "" ]; then
@@ -125,6 +132,6 @@ runs:
       /ko-app/apko publish \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         '--debug' \
-        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs $packageVersionTag $tagSuffix | tee ${DIGEST_FILE}
+        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs $packageVersionTag $tagSuffix $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})

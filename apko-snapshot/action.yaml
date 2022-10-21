@@ -134,6 +134,11 @@ runs:
         echo ::set-output name=epoch::$(date -u +%s)
       shell: bash
 
+    - name: Init SBOM directory
+      shell: bash
+      run: |
+        mkdir /tmp/sbom
+
     # Only publish the versioned tag to start.  After we have signed and
     # attested things, then we use crane to update :latest below.
     - uses: chainguard-images/actions/apko-publish@main
@@ -151,6 +156,7 @@ runs:
         automount-dest: ${{ inputs.automount-dest }}
         package-version-tag: ${{ inputs.package-version-tag }}
         tag-suffix: ${{ inputs.tag-suffix }}
+        sbom-path: "/tmp/sbom"
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:
@@ -167,6 +173,21 @@ runs:
             -a sha=${{ github.sha }} \
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
+    
+    - name: Attest SBOMs
+      shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+        for SBOM in /tmp/sbom/*.cdx; do
+          IMAGE_DIGEST=$(cat ${SBOM} | jq -r '.components[0]["bom-ref"]'| sed 's/.*@\(.*\)\?.*/\1/')
+          cosign attest --predicate ${SBOM} --type cyclonedx "${{ inputs.base-tag }}@${IMAGE_DIGEST}"
+        done
+
+        for SBOM in /tmp/sbom/*.spdx.json; do
+          IMAGE_DIGEST=$(cat ${SBOM} | jq -r '.name[5:]')
+          cosign attest --predicate ${SBOM} --type spdxjson "${{ inputs.base-tag }}@${IMAGE_DIGEST}"
+        done
 
     # Now that everything else has completed successfully, update the target tag.
     # based on the digest produced above.
