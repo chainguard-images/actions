@@ -72,6 +72,17 @@ inputs:
       apko can tag the final image with the version of the corresponding apk package passed in here.
     required: false
     default: ''
+  
+  package-version-tag-stem:
+    description: |
+      stem version tags.
+    required: false
+
+  package-version-tag-prefix:
+    description: |
+      prefix for version tag(s).
+    required: false
+    default: ''
 
   tag-suffix:
     description: |
@@ -150,6 +161,8 @@ runs:
         automount-src: ${{ inputs.automount-src }}
         automount-dest: ${{ inputs.automount-dest }}
         package-version-tag: ${{ inputs.package-version-tag }}
+        package-version-tag-stem: ${{ inputs.package-version-tag-stem }}
+        package-version-tag-prefix: ${{ inputs.package-version-tag-prefix }}
         tag-suffix: ${{ inputs.tag-suffix }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
