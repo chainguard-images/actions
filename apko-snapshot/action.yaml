@@ -100,7 +100,12 @@ inputs:
     description: |
       The value to pass to --image-refs.
     default: apko.images
-  
+
+  stage_tags:
+    description: |
+      The value to pass to --stage-tags.
+    default: ''
+
   automount-src:
     description: |
       In subsequent steps, if this directory is found, create a copy at automount-dest (inside container)
@@ -153,6 +158,7 @@ runs:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         image_refs: ${{ inputs.image_refs }}
+        stage_tags: ${{ inputs.stage_tags }}
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}

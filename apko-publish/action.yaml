@@ -35,6 +35,11 @@ inputs:
       The value to pass to --image-refs.
     default: /tmp/apko.images
 
+  stage_tags:
+    description: |
+      The value to pass to --stage-tags.
+    default: ''
+
   keyring-append:
     description: |
       The value to pass to --keyring-append.
@@ -140,6 +145,6 @@ runs:
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.package-version-tag-stem && '--package-version-tag-stem' }} \
         '--debug' \
-        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs $packageVersionTag $packageVersionTagPrefix $tagSuffix | tee ${DIGEST_FILE}
+        --image-refs="${{ inputs.image_refs }}" --stage-tags="${{ inputs.stage_tags }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $archs $packageVersionTag $packageVersionTagPrefix $tagSuffix | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})
