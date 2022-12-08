@@ -212,5 +212,5 @@ runs:
         done
 
         if [[ "${STAGE_TAGS_FILE}" != "" ]]; then
-          cat "${STAGE_TAGS_FILE}.tmp" | uniq | sort > "${STAGE_TAGS_FILE}"
+          sudo cat "${STAGE_TAGS_FILE}.tmp" | uniq | sort > "${STAGE_TAGS_FILE}"
         fi
