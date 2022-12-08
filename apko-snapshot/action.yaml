@@ -189,11 +189,28 @@ runs:
 
     # Now that everything else has completed successfully, update the target tag.
     # based on the digest produced above.
+    # If --stage-tags being used, simply append all tags to that file
     - shell: bash
       run: |
-        crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:${{ inputs.target-tag }}
+        set -x
+        STAGE_TAGS_FILE="${{ inputs.stage_tags }}"
+
+        if [[ "${STAGE_TAGS_FILE}" != "" ]]; then
+          cp "${STAGE_TAGS_FILE}" "${STAGE_TAGS_FILE}.tmp"
+          echo "${{ inputs.base-tag }}:${{ inputs.target-tag }}" >> "${STAGE_TAGS_FILE}.tmp"
+        else
+          crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:${{ inputs.target-tag }}
+        fi
 
         for tag in $(echo ${{ inputs.additional-tags }} | sed "s/,/ /g")
         do
-          crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:$tag
+          if [[ "${STAGE_TAGS_FILE}" != "" ]]; then
+            echo "${{ inputs.base-tag }}:$tag" >> "${STAGE_TAGS_FILE}.tmp"
+          else
+            crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:$tag
+          fi
         done
+
+        if [[ "${STAGE_TAGS_FILE}" != "" ]]; then
+          cat "${STAGE_TAGS_FILE}.tmp" | uniq | sort > "${STAGE_TAGS_FILE}"
+        fi
