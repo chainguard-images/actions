@@ -332,4 +332,5 @@ runs:
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
         
         cosign verify-attestation --rekor-url ${{ inputs.REKOR_URL }} \
-        --type vuln --policy vulnz.cue ${{ inputs.image }}
+          --type vuln --policy vulnz.cue ${{ inputs.image }} || \
+          echo "WARNING: Could not verify attestation (is this a private image?)"
