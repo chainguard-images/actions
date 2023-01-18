@@ -193,7 +193,7 @@ runs:
     # https://github.com/aquasecurity/trivy-action/pull/191
     - name:  Scan image with AquaSec/Trivy
       if: inputs.RUN_TRIVY == 'true'
-      uses: jdolitsky/trivy-action@baaad5f084e3b3030fcbfa8b71a966de15106a9d #v0.5.1
+      uses: jdolitsky/trivy-action@b9ddfa867cc0f68c3699d9d62871c3838168d796
       id: trivy-scan
       with:
         image-ref: ${{ inputs.image }}
