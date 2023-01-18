@@ -189,10 +189,11 @@ runs:
         cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
         --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
 
-
+    # Note: using a fork. See open PR:
+    # https://github.com/aquasecurity/trivy-action/pull/191
     - name:  Scan image with AquaSec/Trivy
       if: inputs.RUN_TRIVY == 'true'
-      uses: aquasecurity/trivy-action@0105373003c89c494a3f436bd5efc57f3ac1ca20 #v0.5.1
+      uses: jdolitsky/trivy-action@baaad5f084e3b3030fcbfa8b71a966de15106a9d #v0.5.1
       id: trivy-scan
       with:
         image-ref: ${{ inputs.image }}
@@ -201,6 +202,7 @@ runs:
         exit-code: 0
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN'
+        offline-scan: 'true'
 
     - name: Cosign Attest trivy results
       if: inputs.RUN_TRIVY == 'true'
