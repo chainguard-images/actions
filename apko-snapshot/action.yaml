@@ -55,6 +55,12 @@ inputs:
     required: false
     default: ''
 
+  repository-append:
+    description: |
+      The value to pass to --repository-append.
+    required: false
+    default: ''
+
   archs:
     description: |
       The architectures to build for.
@@ -162,6 +168,7 @@ runs:
         source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}
+        repository-append: ${{ inputs.repository-append }}
         archs: ${{ inputs.archs }}
         debug: ${{ inputs.debug }}
         automount-src: ${{ inputs.automount-src }}
