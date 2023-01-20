@@ -64,7 +64,7 @@ inputs:
 
 runs:
   using: docker
-  image:  "docker://cgr.dev/chainguard/apko:0.6.0"
+  image:  "docker://ghcr.io/chainguard-dev/apko@sha256:b4553a20baeae0cb57afebbe8e695820a463677dd3cb0bd9a8434551f1a33cdd"
   entrypoint: /bin/sh
   args:
     - '-c'
@@ -78,7 +78,7 @@ runs:
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
       [ -n "${{ inputs.repository-append }}" ] && repos="-r ${{ inputs.repository-append }}"
       [ -n "${{ inputs.archs }}" ] && archs="--build-arch ${{ inputs.archs }}"
-      /usr/bin/apko build \
+      /ko-app/apko build \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.debug && '--debug' }} \
         ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $repos $archs
