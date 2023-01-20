@@ -64,7 +64,7 @@ inputs:
 
 runs:
   using: docker
-  image:  "docker://ghcr.io/wolfi-dev/apko:latest"
+  image:  "docker://cgr.dev/chainguard/apko:0.6.0"
   entrypoint: /bin/sh
   args:
     - '-c'
