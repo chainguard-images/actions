@@ -251,9 +251,9 @@ runs:
       # TODO: use the anchore action again. Please see:
       # - https://github.com/anchore/grype/issues/1102
       # - https://github.com/anchore/grype/pull/1104
+      # - https://github.com/anchore/scan-action/pull/212
       # uses: anchore/scan-action@ecfd0e98932e57ea8f68f29c4f418fc41a8194db
-      # uses: jdolitsky/scan-action@e5d64c5f108f532bd0f5e2262c919c4d618839ba # The "fix-install" branch
-      uses: jdolitsky/scan-action@fix-install
+      uses: jdolitsky/scan-action@aa58532757c43a60a2e2e0f2268065fdb50ee244 # The "fix-install" branch
       with:
         image: ${{ inputs.image }}
         fail-build: false
