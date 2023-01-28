@@ -252,7 +252,8 @@ runs:
       # - https://github.com/anchore/grype/issues/1102
       # - https://github.com/anchore/grype/pull/1104
       # uses: anchore/scan-action@ecfd0e98932e57ea8f68f29c4f418fc41a8194db
-      uses: jdolitsky/scan-action@e5d64c5f108f532bd0f5e2262c919c4d618839ba # The "fix-install" branch
+      # uses: jdolitsky/scan-action@e5d64c5f108f532bd0f5e2262c919c4d618839ba # The "fix-install" branch
+      uses: jdolitsky/scan-action@fix-install
       with:
         image: ${{ inputs.image }}
         fail-build: false
