@@ -184,6 +184,21 @@ runs:
         username: ${{ inputs.username }}
         password: ${{ inputs.token }}
 
+    # Upload the SBOMs as attestations
+    # TODO: instrument apko to produce these on disk so we are not downloading them from remote
+    - shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+        trap "rm -f spdx-sbom.json" EXIT
+        for ref in $(cat ${{ inputs.image_refs }}); do
+          echo "Downloading .sbom attachment and re-adding as spdxjson attestation: ${ref}"
+          cosign download sbom "${ref}" > spdx-sbom.json
+          cosign attest --predicate spdx-sbom.json --type spdxjson \
+            --fulcio-url ${{ inputs.FULCIO_URL }} --rekor-url ${{ inputs.REKOR_URL }} \
+            "${ref}"
+        done
+
     - shell: bash
       env:
         COSIGN_EXPERIMENTAL: "true"
