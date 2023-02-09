@@ -116,7 +116,7 @@ outputs:
 
 runs:
   using: docker
-  image: "docker://ghcr.io/chainguard-dev/apko@sha256:b4553a20baeae0cb57afebbe8e695820a463677dd3cb0bd9a8434551f1a33cdd"
+  image: "docker://ghcr.io/wolfi-dev/apko:latest"
   env:
     # Set up go-containerregistry's GitHub keychain.
     GITHUB_ACTOR: ${{ inputs.repository_owner }}
@@ -147,7 +147,7 @@ runs:
       tagSuffix="--tag-suffix=${{ inputs.tag-suffix }}"
 
       export DIGEST_FILE=$(mktemp)
-      /ko-app/apko publish \
+      /usr/bin/apko publish \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.package-version-tag-stem && '--package-version-tag-stem' }} \
         '--debug' \
