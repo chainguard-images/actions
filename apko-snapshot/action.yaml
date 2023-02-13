@@ -158,7 +158,7 @@ runs:
 
     # Only publish the versioned tag to start.  After we have signed and
     # attested things, then we use crane to update :latest below.
-    - uses: chainguard-images/actions/apko-publish@main
+    - uses: chainguard-images/actions/apko-publish@apko-main
       id: apko
       with:
         config: ${{ inputs.config }}
