@@ -77,7 +77,7 @@ runs:
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
       [ -n "${{ inputs.repository-append }}" ] && repos="-r ${{ inputs.repository-append }}"
-      [ -n "${{ inputs.archs }}" ] && archs="--build-arch ${{ inputs.archs }}"
+      [ -n "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
       /usr/bin/apko build \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.debug && '--debug' }} \
