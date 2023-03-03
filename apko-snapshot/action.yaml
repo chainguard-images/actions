@@ -78,7 +78,7 @@ inputs:
       apko can tag the final image with the version of the corresponding apk package passed in here.
     required: false
     default: ''
-  
+
   package-version-tag-stem:
     description: |
       stem version tags.
@@ -142,7 +142,7 @@ runs:
   using: composite
   steps:
     - name: Setup cosign
-      uses: sigstore/cosign-installer@main
+      uses: sigstore/cosign-installer@v3
 
     - uses: imjasonh/setup-crane@v0.1
 
