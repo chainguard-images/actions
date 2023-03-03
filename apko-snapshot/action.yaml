@@ -78,7 +78,7 @@ inputs:
       apko can tag the final image with the version of the corresponding apk package passed in here.
     required: false
     default: ''
-  
+
   package-version-tag-stem:
     description: |
       stem version tags.
@@ -142,7 +142,7 @@ runs:
   using: composite
   steps:
     - name: Setup cosign
-      uses: sigstore/cosign-installer@main
+      uses: sigstore/cosign-installer@v3
 
     - uses: imjasonh/setup-crane@v0.1
 
@@ -188,7 +188,7 @@ runs:
       env:
         COSIGN_EXPERIMENTAL: "true"
       run: |
-        cosign sign $(cat ${{ inputs.image_refs }}) \
+        cosign sign --yes $(cat ${{ inputs.image_refs }}) \
             --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
             -a sha=${{ github.sha }} \
             -a run_id=${{ github.run_id }} \
