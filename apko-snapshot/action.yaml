@@ -67,6 +67,11 @@ inputs:
     required: false
     default: ''
 
+  build-options:
+    description: |
+      Build options to enable (comma-separated).
+    default: ''
+
   additional-tags:
     description: |
       Additional tags for the final image.
@@ -177,6 +182,7 @@ runs:
         package-version-tag-stem: ${{ inputs.package-version-tag-stem }}
         package-version-tag-prefix: ${{ inputs.package-version-tag-prefix }}
         tag-suffix: ${{ inputs.tag-suffix }}
+        build-options: ${{ inputs.build-options }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:
