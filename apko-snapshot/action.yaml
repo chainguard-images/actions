@@ -101,6 +101,13 @@ inputs:
     required: false
     default: ''
 
+  sbom-attest:
+    description: |
+      Upload SBOMs as attestations.
+    type: boolean
+    required: false
+    default: false
+
   debug:
     description: |
       Enable debug logging.
@@ -160,6 +167,13 @@ runs:
         echo ::set-output name=date::$(date -u +%Y%m%d)
         echo ::set-output name=epoch::$(date -u +%s)
       shell: bash
+    
+    - name: Generate dynamic inputs for apko-publish
+      shell: bash
+      id: apko-publish-inputs
+      run: |
+        # If sbom-attest enabled, write SBOMs to working directory to attest later
+        echo "sbom-path=${{ inputs.sbom-attest && '.' || ''}}" >> $GITHUB_OUTPUT
 
     # Only publish the versioned tag to start.  After we have signed and
     # attested things, then we use crane to update :latest below.
@@ -183,6 +197,7 @@ runs:
         package-version-tag-prefix: ${{ inputs.package-version-tag-prefix }}
         tag-suffix: ${{ inputs.tag-suffix }}
         build-options: ${{ inputs.build-options }}
+        sbom-path: ${{ steps.apko-publish-inputs.outputs.sbom-path }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:
@@ -199,6 +214,52 @@ runs:
             -a sha=${{ github.sha }} \
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
+
+    - name: Upload SBOMs as attestations
+      if: inputs.sbom-attest
+      shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+      run: |
+        function attest_sbom {
+          arch="${1}"
+          digest="${2}"
+          sbomfile="${3}"
+          if [[ "${sbomfile}" == "" ]]; then
+            echo "Unknown architecture: ${arch}. Exiting."
+            exit 1
+          fi
+          if [[ ! -f "${sbomfile}" ]]; then
+            echo "Unable to find SBOM on disk: ${sbomfile} (arch: ${arch}). Exiting."
+            exit 1
+          fi
+          echo "Attaching ${sbomfile} to ${digest} as spdxjson attestation (arch: ${arch}) ..."
+          cosign attest --yes --type spdxjson --predicate "${sbomfile}" "${digest}"
+          rm -f "${sbomfile}"
+        }
+
+        # First attest the index SBOM
+        attest_sbom "index" "${{ steps.apko.outputs.digest }}" "sbom-index.spdx.json"
+
+        # Then attest SBOMs for each individual architecture
+        for combo in `crane manifest ${{ steps.apko.outputs.digest }} | jq -r '.manifests[] | .platform.architecture + .platform.variant + "_" + .digest'`; do
+          arch="$(echo "${combo}" | cut -d "_" -f1)"
+          digest="$(echo "${combo}" | cut -d "_" -f2)"
+
+          # Convert the OCI arch types into APK arch types
+          sbomfile=""
+          [[ "${arch}" != "386" ]] || sbomfile="sbom-x86.spdx.json"
+          [[ "${arch}" != "amd64" ]] || sbomfile="sbom-x86_64.spdx.json"
+          [[ "${arch}" != "armv6" ]] || sbomfile="sbom-armhf.spdx.json"
+          [[ "${arch}" != "armv7" ]] || sbomfile="sbom-armv7.spdx.json"
+          [[ "${arch}" != "arm64" ]] || sbomfile="sbom-aarch64.spdx.json"
+          [[ "${arch}" != "ppc64le" ]] || sbomfile="sbom-ppc64le.spdx.json"
+          [[ "${arch}" != "riscv64" ]] || sbomfile="sbom-riscv64.spdx.json"
+          [[ "${arch}" != "s390x" ]] || sbomfile="sbom-s390x.spdx.json"
+
+          # Attest it
+          attest_sbom "${arch}" "${{ inputs.base-tag }}@${digest}" "${sbomfile}"
+        done
 
     # Now that everything else has completed successfully, update the target tag.
     # based on the digest produced above.
