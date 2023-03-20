@@ -114,6 +114,12 @@ inputs:
     required: false
     default: ''
 
+  sbom-path:
+    description: |
+      Path to write the SBOMs.
+    required: false
+    default: ''
+
 outputs:
   digest:
     description: |
@@ -157,12 +163,13 @@ runs:
       packageVersionTagPrefix="--package-version-tag-prefix=${{ inputs.package-version-tag-prefix }}"
 
       tagSuffix="--tag-suffix=${{ inputs.tag-suffix }}"
+      sbomPath="--sbom-path=${{ inputs.sbom-path }}"
 
       export DIGEST_FILE=$(mktemp)
       /usr/bin/apko publish \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.package-version-tag-stem && '--package-version-tag-stem' }} \
         '--debug' \
-        --image-refs="${{ inputs.image_refs }}" --stage-tags="${{ inputs.stage_tags }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $archs $build_options $packageVersionTag $packageVersionTagPrefix $tagSuffix | tee ${DIGEST_FILE}
+        --image-refs="${{ inputs.image_refs }}" --stage-tags="${{ inputs.stage_tags }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $archs $build_options $packageVersionTag $packageVersionTagPrefix $tagSuffix $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})
