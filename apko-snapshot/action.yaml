@@ -108,6 +108,18 @@ inputs:
     required: false
     default: false
 
+  generic-user:
+    description: |
+      Username to login to registry.
+    required: false
+    default: ''
+
+  generic-pass:
+    description: |
+      Password to login to registry.
+    required: false
+    default: ''
+
   debug:
     description: |
       Enable debug logging.
@@ -198,6 +210,8 @@ runs:
         tag-suffix: ${{ inputs.tag-suffix }}
         build-options: ${{ inputs.build-options }}
         sbom-path: ${{ steps.apko-publish-inputs.outputs.sbom-path }}
+        generic-user: ${{ inputs.generic-user }}
+        generic-pass: ${{ inputs.generic-pass }}
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       with:
