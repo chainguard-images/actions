@@ -155,7 +155,7 @@ runs:
       if [[ "${{ inputs.generic-user }}" != "" && "${{ inputs.generic-pass }}" != "" ]]; then
         echo "${{ inputs.generic-pass }}" | \
           /usr/bin/apko login -u "${{ inputs.generic-user }}" \
-            --password-stdin "https://$(echo "${{ inputs.tag }}" | cut -d'/' -f1)"
+            --password-stdin "$(echo "${{ inputs.tag }}" | cut -d'/' -f1)"
       fi
 
       if [ -d "${{ inputs.automount-src }}" ]; then
