@@ -120,6 +120,18 @@ inputs:
     required: false
     default: ''
 
+  generic-user:
+    description: |
+      Username to login to registry.
+    required: false
+    default: ''
+
+  generic-pass:
+    description: |
+      Password to login to registry.
+    required: false
+    default: ''
+
 outputs:
   digest:
     description: |
@@ -139,6 +151,13 @@ runs:
     - |
       set -o errexit
       set -o pipefail
+
+      if [[ "${{ inputs.generic-user }}" != "" && "${{ inputs.generic-pass }}" != "" ]]; then
+        echo "${{ inputs.generic-pass }}" | \
+          /usr/bin/apko login -u "${{ inputs.generic-user }}" \
+            --password-stdin "https://$(echo "${{ inputs.tag }}" | cut -d'/' -f1)"
+      fi
+
       if [ -d "${{ inputs.automount-src }}" ]; then
         echo "Creating copy of ${{ inputs.automount-src }} at ${{ inputs.automount-dest }}"
         cp -r "${{ inputs.automount-src }}" "${{ inputs.automount-dest }}"
