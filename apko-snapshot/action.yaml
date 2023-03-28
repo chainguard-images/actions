@@ -104,9 +104,15 @@ inputs:
   sbom-attest:
     description: |
       Upload SBOMs as attestations.
-    type: boolean
     required: false
-    default: false
+    default: ''
+
+  # Note: requires "actions: read"
+  slsa-attest:
+    description: |
+      Upload build provenance information as attestation.
+    required: false
+    default: ''
 
   generic-user:
     description: |
@@ -161,6 +167,42 @@ outputs:
     value: ${{ steps.apko.outputs.digest }}
     description: |
       The digest of the published container image.
+  digest-index:
+    value: ${{ steps.extract.outputs.digest-index }}
+  digest-amd64:
+    value: ${{ steps.extract.outputs.digest-amd64 }}
+  digest-arm64:
+    value: ${{ steps.extract.outputs.digest-arm64 }}
+  digest-386:
+    value: ${{ steps.extract.outputs.digest-386 }}
+  digest-armv6:
+    value: ${{ steps.extract.outputs.digest-armv6 }}
+  digest-armv7:
+    value: ${{ steps.extract.outputs.digest-armv7 }}
+  digest-ppc64le:
+    value: ${{ steps.extract.outputs.digest-ppc64le }}
+  digest-riscv64:
+    value: ${{ steps.extract.outputs.digest-riscv64 }}
+  digest-s390x:
+    value: ${{ steps.extract.outputs.digest-s390x }}
+  shortdigest-index:
+    value: ${{ steps.extract.outputs.shortdigest-index }}
+  shortdigest-amd64:
+    value: ${{ steps.extract.outputs.shortdigest-amd64 }}
+  shortdigest-arm64:
+    value: ${{ steps.extract.outputs.shortdigest-arm64 }}
+  shortdigest-386:
+    value: ${{ steps.extract.outputs.shortdigest-386 }}
+  shortdigest-armv6:
+    value: ${{ steps.extract.outputs.shortdigest-armv6 }}
+  shortdigest-armv7:
+    value: ${{ steps.extract.outputs.shortdigest-armv7 }}
+  shortdigest-ppc64le:
+    value: ${{ steps.extract.outputs.shortdigest-ppc64le }}
+  shortdigest-riscv64:
+    value: ${{ steps.extract.outputs.shortdigest-riscv64 }}
+  shortdigest-s390x:
+    value: ${{ steps.extract.outputs.shortdigest-s390x }}
 
 runs:
   using: composite
@@ -229,8 +271,34 @@ runs:
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
 
+    - name: Extract the digests for each architecture
+      id: extract
+      shell: bash
+      run: |
+        output="digest-index=${{ steps.apko.outputs.digest }}"
+        echo "Adding GitHub step output: ${output}"
+        echo "${output}" >> $GITHUB_OUTPUT
+        output="shortdigest-index=$(echo "${{ steps.apko.outputs.digest }}" | cut -d@ -f 2)"
+        echo "Adding GitHub step output: ${output}"
+        echo "${output}" >> $GITHUB_OUTPUT
+
+        # If its an index, extract the platform digests too
+        CRANE_MANIFEST_OUTPUT="$(crane manifest ${{ steps.apko.outputs.digest }})"
+        if [[ "$(echo $CRANE_MANIFEST_OUTPUT | jq -r .mediaType)" == "application/vnd.oci.image.index.v1+json" ]]; then
+          for combo in `echo $CRANE_MANIFEST_OUTPUT | jq -r '.manifests[] | .platform.architecture + .platform.variant + "_" + .digest'`; do
+            arch="$(echo "${combo}" | cut -d "_" -f1)"
+            digest="$(echo "${combo}" | cut -d "_" -f2)"
+            output="digest-${arch}=${{ inputs.base-tag }}@${digest}"
+            echo "Adding GitHub step output: ${output}"
+            echo "${output}" >> $GITHUB_OUTPUT
+            output="shortdigest-${arch}=${digest}"
+            echo "Adding GitHub step output: ${output}"
+            echo "${output}" >> $GITHUB_OUTPUT
+          done
+        fi
+
     - name: Upload SBOMs as attestations
-      if: inputs.sbom-attest
+      if: ${{ inputs.sbom-attest == 'true' }}
       shell: bash
       env:
         COSIGN_EXPERIMENTAL: "true"
@@ -253,27 +321,67 @@ runs:
         }
 
         # First attest the index SBOM
-        attest_sbom "index" "${{ steps.apko.outputs.digest }}" "sbom-index.spdx.json"
+        attest_sbom "index" "${{ steps.extract.outputs.digest-index }}" "sbom-index.spdx.json"
 
-        # Then attest SBOMs for each individual architecture
-        for combo in `crane manifest ${{ steps.apko.outputs.digest }} | jq -r '.manifests[] | .platform.architecture + .platform.variant + "_" + .digest'`; do
-          arch="$(echo "${combo}" | cut -d "_" -f1)"
-          digest="$(echo "${combo}" | cut -d "_" -f2)"
+        # Next, for each architecture (if present)
+        [[ "${{ steps.extract.outputs.digest-amd64 }}" == "" ]] || attest_sbom "amd64" "${{ steps.extract.outputs.digest-amd64 }}" "sbom-x86_64.spdx.json"
+        [[ "${{ steps.extract.outputs.digest-arm64 }}" == "" ]] || attest_sbom "arm64" "${{ steps.extract.outputs.digest-arm64 }}" "sbom-aarch64.spdx.json"
+        [[ "${{ steps.extract.outputs.digest-386 }}" == "" ]] || attest_sbom "386" "${{ steps.extract.outputs.digest-386 }}" "sbom-x86.spdx.json"
+        [[ "${{ steps.extract.outputs.digest-armv6 }}" == "" ]] || attest_sbom "armv6" "${{ steps.extract.outputs.digest-armv6 }}" "sbom-armhf.spdx.json"
+        [[ "${{ steps.extract.outputs.digest-armv7 }}" == "" ]] || attest_sbom "armv7" "${{ steps.extract.outputs.digest-armv7 }}" "sbom-armv7.spdx.json"
+        [[ "${{ steps.extract.outputs.digest-ppc64le }}" == "" ]] || attest_sbom "ppc64le" "${{ steps.extract.outputs.digest-ppc64le }}" "sbom-ppc64le.spdx.json"
+        [[ "${{ steps.extract.outputs.digest-riscv64 }}" == "" ]] || attest_sbom "riscv64" "${{ steps.extract.outputs.digest-riscv64 }}" "sbom-riscv64.spdx.json"
+        [[ "${{ steps.extract.outputs.digest-s390x }}" == "" ]] || attest_sbom "s390x" "${{ steps.extract.outputs.digest-s390x }}" "sbom-s390x.spdx.json"
 
-          # Convert the OCI arch types into APK arch types
-          sbomfile=""
-          [[ "${arch}" != "386" ]] || sbomfile="sbom-x86.spdx.json"
-          [[ "${arch}" != "amd64" ]] || sbomfile="sbom-x86_64.spdx.json"
-          [[ "${arch}" != "armv6" ]] || sbomfile="sbom-armhf.spdx.json"
-          [[ "${arch}" != "armv7" ]] || sbomfile="sbom-armv7.spdx.json"
-          [[ "${arch}" != "arm64" ]] || sbomfile="sbom-aarch64.spdx.json"
-          [[ "${arch}" != "ppc64le" ]] || sbomfile="sbom-ppc64le.spdx.json"
-          [[ "${arch}" != "riscv64" ]] || sbomfile="sbom-riscv64.spdx.json"
-          [[ "${arch}" != "s390x" ]] || sbomfile="sbom-s390x.spdx.json"
+    # See https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container
+    - name: 'SLSA: Generate provenance and attest'
+      if: ${{ inputs.slsa-attest == 'true' }}
+      shell: bash
+      env:
+        COSIGN_EXPERIMENTAL: "true"
+        GENERATOR_REPOSITORY: slsa-framework/slsa-github-generator
+        GENERATOR_RELEASE_TAG: v1.5.0
+        GENERATOR_RELEASE_BINARY: slsa-generator-container-linux-amd64
+        GENERATOR_RELEASE_BINARY_SHA256: 6d8b83327ac2134aa8760e1e4f9cd5d3fdbcb56599e39be2cd965f1e04aa8ede
+        GH_TOKEN: "${{ github.token }}"
+        GITHUB_CONTEXT: "${{ toJSON(github) }}" # Needed by slsa-generator-container
+      run: |
+        set -x
+        # Fetch the generator
+        gh release -R "${GENERATOR_REPOSITORY}" download "${GENERATOR_RELEASE_TAG}" -p "${GENERATOR_RELEASE_BINARY}"
+        COMPUTED_HASH="$(sha256sum "${GENERATOR_RELEASE_BINARY}" | awk '{print $1}')"
+        if [[ "${COMPUTED_HASH}" != "${GENERATOR_RELEASE_BINARY_SHA256}" ]]; then
+          echo "Mismatched checksums (wanted ${GENERATOR_RELEASE_BINARY_SHA256} got ${COMPUTED_HASH}). Exiting."
+          exit 1
+        fi
+        chmod +x "${GENERATOR_RELEASE_BINARY}"
 
-          # Attest it
-          attest_sbom "${arch}" "${{ inputs.base-tag }}@${digest}" "${sbomfile}"
-        done
+        # Create the provenance document
+        trap "rm -f provenance.json" EXIT
+        echo "Generating SLSA build provenance ..."
+        "./${GENERATOR_RELEASE_BINARY}" generate --predicate="provenance.json"
+        echo "Provenance doc:"
+        cat provenance.json | jq
+
+        function attest_slsa {
+          arch="${1}"
+          digest="${2}"
+          echo "Attaching SLSA build provenance to ${digest} (arch: ${arch}) ..."
+          cosign attest --yes --type slsaprovenance --predicate="provenance.json" "${digest}"
+        }
+
+        # First attest the index
+        attest_slsa "index" "${{ steps.extract.outputs.digest-index }}"
+
+        # Next, for each architecture (if present)
+        [[ "${{ steps.extract.outputs.digest-amd64 }}" == "" ]] || attest_slsa "amd64" "${{ steps.extract.outputs.digest-amd64 }}"
+        [[ "${{ steps.extract.outputs.digest-arm64 }}" == "" ]] || attest_slsa "arm64" "${{ steps.extract.outputs.digest-arm64 }}"
+        [[ "${{ steps.extract.outputs.digest-386 }}" == "" ]] || attest_slsa "386" "${{ steps.extract.outputs.digest-386 }}"
+        [[ "${{ steps.extract.outputs.digest-armv6 }}" == "" ]] || attest_slsa "armv6" "${{ steps.extract.outputs.digest-armv6 }}"
+        [[ "${{ steps.extract.outputs.digest-armv7 }}" == "" ]] || attest_slsa "armv7" "${{ steps.extract.outputs.digest-armv7 }}"
+        [[ "${{ steps.extract.outputs.digest-ppc64le }}" == "" ]] || attest_slsa "ppc64le" "${{ steps.extract.outputs.digest-ppc64le }}"
+        [[ "${{ steps.extract.outputs.digest-riscv64 }}" == "" ]] || attest_slsa "riscv64" "${{ steps.extract.outputs.digest-riscv64 }}"
+        [[ "${{ steps.extract.outputs.digest-s390x }}" == "" ]] || attest_slsa "s390x" "${{ steps.extract.outputs.digest-s390x }}"
 
     # Now that everything else has completed successfully, update the target tag.
     # based on the digest produced above.
