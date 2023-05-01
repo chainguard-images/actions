@@ -7,6 +7,12 @@ description: |
   and tag to use.
 
 inputs:
+  apko-image:
+    description: |
+      The digest of the apko image to invoke.
+    default: ghcr.io/wolfi-dev/apko:latest
+    required: true
+
   config:
     description: |
       The config file to use for building the image.
@@ -138,17 +144,18 @@ outputs:
       The digest of the published container image.
 
 runs:
-  using: docker
-  image: "docker://ghcr.io/wolfi-dev/apko:latest"
-  env:
-    # Set up go-containerregistry's GitHub keychain.
-    GITHUB_ACTOR: ${{ inputs.repository_owner }}
-    GITHUB_TOKEN: ${{ inputs.token }}
-    REPOSITORY: ${{ inputs.repository }}
-  entrypoint: /bin/sh
-  args:
-    - '-c'
-    - |
+  using: composite
+  steps:
+  - shell: bash
+    run: |
+      docker run -i --rm --entrypoint /bin/sh \
+        -v $PWD:/workspace \
+        --workdir /workspace \
+        -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
+        -e "GITHUB_TOKEN=${{ inputs.token }}" \
+        -e "REPOSITORY=${{ inputs.repository }}" \
+        ${{ inputs.apko-image }} \
+        -c "$(cat <<"EOF"
       set -o errexit
       set -o pipefail
 
@@ -192,3 +199,5 @@ runs:
         --image-refs="${{ inputs.image_refs }}" --stage-tags="${{ inputs.stage_tags }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $archs $build_options $packageVersionTag $packageVersionTagPrefix $tagSuffix $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})
+      EOF
+      )"
