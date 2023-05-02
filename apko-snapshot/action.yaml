@@ -7,6 +7,12 @@ description: |
   and base tag to use.
 
 inputs:
+  apko-image:
+    description: |
+      The digest of the apko image to invoke.
+    default: ghcr.io/wolfi-dev/apko:latest
+    required: true
+
   config:
     description: |
       The config file to use for building the image.
@@ -221,7 +227,7 @@ runs:
         echo ::set-output name=date::$(date -u +%Y%m%d)
         echo ::set-output name=epoch::$(date -u +%s)
       shell: bash
-    
+
     - name: Generate dynamic inputs for apko-publish
       shell: bash
       id: apko-publish-inputs
@@ -234,6 +240,7 @@ runs:
     - uses: chainguard-images/actions/apko-publish@main
       id: apko
       with:
+        apko-image: ${{ inputs.apko-image }}
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         image_refs: ${{ inputs.image_refs }}
