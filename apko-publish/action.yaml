@@ -140,13 +140,15 @@ inputs:
 
 outputs:
   digest:
+    value: ${{ steps.docker-run.outputs.digest }}
     description: |
       The digest of the published container image.
 
 runs:
   using: composite
   steps:
-  - shell: bash
+  - id: docker-run
+    shell: bash
     run: |
       docker run -i --rm --entrypoint /bin/sh \
         -v $PWD:/workspace \
