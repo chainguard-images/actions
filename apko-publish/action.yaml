@@ -150,13 +150,18 @@ runs:
   - id: docker-run
     shell: bash
     run: |
+      APKO_IMAGE="${{ inputs.apko-image }}"
+      if [[ "${APKO_IMAGE}" == "" ]]; then
+        echo "Warning: using latest wolfi-dev/apko image since apko-image input was empty string."
+        APKO_IMAGE="ghcr.io/wolfi-dev/apko:latest"
+      fi
       docker run -i --rm --entrypoint /bin/sh \
         -v $PWD:/workspace \
         --workdir /workspace \
         -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
         -e "GITHUB_TOKEN=${{ inputs.token }}" \
         -e "REPOSITORY=${{ inputs.repository }}" \
-        ${{ inputs.apko-image }} \
+        "${APKO_IMAGE}" \
         -c "$(cat <<"EOF"
       set -o errexit
       set -o pipefail
