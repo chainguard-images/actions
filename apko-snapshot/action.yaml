@@ -219,7 +219,7 @@ runs:
     - uses: imjasonh/setup-crane@v0.1
 
     - name: Setup QEMU
-      uses: docker/setup-qemu-action@v1.2.0
+      uses: docker/setup-qemu-action@v2.1.0
 
     - name: Generate snapshot date
       id: snapshot-date
