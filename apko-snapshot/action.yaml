@@ -225,7 +225,6 @@ runs:
       id: snapshot-date
       run: |
         echo ::set-output name=date::$(date -u +%Y%m%d)
-        echo ::set-output name=epoch::$(date -u +%s)
       shell: bash
 
     - name: Generate dynamic inputs for apko-publish
@@ -245,7 +244,6 @@ runs:
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         image_refs: ${{ inputs.image_refs }}
         stage_tags: ${{ inputs.stage_tags }}
-        source-date-epoch: ${{ steps.snapshot-date.outputs.epoch }}
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}
         repository-append: ${{ inputs.repository-append }}
