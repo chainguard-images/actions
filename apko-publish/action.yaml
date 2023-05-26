@@ -78,6 +78,13 @@ inputs:
     type: boolean
     required: false
 
+  vcs-url:
+    description: |
+      Whether to detect and embed the VCS URL (unlike apko we default this to false for reproducible builds).
+    type: boolean
+    required: false
+    default: false
+
   debug:
     description: |
       Enable debug logging.
@@ -200,6 +207,7 @@ runs:
 
       export DIGEST_FILE=$(mktemp)
       /usr/bin/apko publish \
+        --vcs=${{ inputs.vcs-url }} \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.package-version-tag-stem && '--package-version-tag-stem' }} \
         '--debug' \
