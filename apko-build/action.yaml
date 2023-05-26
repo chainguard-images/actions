@@ -56,6 +56,13 @@ inputs:
     type: boolean
     required: false
 
+  vcs-url:
+    description: |
+      Whether to detect and embed the VCS URL (unlike apko we default this to false for reproducible builds).
+    type: boolean
+    required: false
+    default: false
+
   debug:
     description: |
       Enable debug logging.
@@ -105,6 +112,7 @@ runs:
         done
       fi
       /usr/bin/apko build \
+        --vcs=${{ inputs.vcs-url }} \
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.debug && '--debug' }} \
         ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $repos $archs $build_options
