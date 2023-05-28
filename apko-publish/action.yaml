@@ -163,7 +163,9 @@ runs:
         APKO_IMAGE="ghcr.io/wolfi-dev/apko:latest"
       fi
       docker run -i --rm --entrypoint /bin/sh \
+        --network host \
         -v $PWD:/github/workspace \
+        -v /tmp:/tmp \
         --workdir /github/workspace \
         -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
         -e "GITHUB_TOKEN=${{ inputs.token }}" \

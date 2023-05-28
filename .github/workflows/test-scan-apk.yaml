@@ -1,0 +1,40 @@
+name: test-scan-apk
+
+on: [pull_request]
+
+jobs:
+  test-unpinned:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+    - uses: ./scan-apk
+      id: scan
+      with:
+        package: ko
+    - run: echo ${{ steps.scan.outputs.vuln-count }}
+
+  test-pinned:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+    - uses: ./scan-apk
+      id: scan
+      with:
+        package: ko=0.13.0-r4
+    - run: echo ${{ steps.scan.outputs.vuln-count }}
+
+  test-alpine:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+    - uses: ./scan-apk
+      id: scan
+      with:
+        repositories: https://dl-cdn.alpinelinux.org/alpine/edge/main
+        keyring: ""
+        package: busybox
+    - run: echo ${{ steps.scan.outputs.vuln-count }}
+
