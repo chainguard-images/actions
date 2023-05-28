@@ -1,0 +1,82 @@
+# Copyright 2022 The Distroless Authors
+# SPDX-License-Identifier: Apache-2.0
+
+name: 'Scan APK for vulnerabilities'
+description: |
+  This action scans an APK for vulnerabilities by turning it into an OCI image first.
+
+inputs:
+
+  repositories:
+    description: |
+      A comma-delimited list of APK repositories to include.
+    required: false
+    default: https://packages.wolfi.dev/os
+
+  keyring:
+    description: |
+      A comma-delimited list of APK keyrings to include.
+    required: false
+    default: https://packages.wolfi.dev/os/wolfi-signing.rsa.pub
+
+  package:
+    description: |
+      The APK to scan for vulnerabilities.
+    required: true
+
+  architecture:
+    description: |
+      The architecture to scan the package for vulnerabilities.
+    required: false
+    default: "x86_64"
+
+outputs:
+  vuln-count:
+    description: Number of vulnerables in Grype scan
+    value: ${{ steps.scan-report.outputs.vuln-count }}
+
+runs:
+  using: composite
+  steps:
+    - uses: chainguard-dev/actions/setup-registry@main
+      with:
+        port: 1234
+
+    - shell: bash
+      id: mkconfig
+      run: |
+        TMP=$(mktemp)
+
+        cat > "${TMP}" <<EOF
+        contents:
+          repositories: $(echo "${{ inputs.repositories }}" | tr -d '[:space:]' | jq --raw-input -c --slurp 'split(",")')
+          keyring: $(echo "${{ inputs.keyring }}" | tr -d '[:space:]' | jq --raw-input -c --slurp 'split(",")')
+          packages:
+          - ${{ inputs.package }}
+
+        archs:
+        - ${{ inputs.architecture }}
+        EOF
+
+        echo "::set-output name=config-file::${TMP}"
+
+    - shell: bash
+      run: |
+        cat ${{ steps.mkconfig.outputs.config-file }}
+
+    - uses: ./apko-publish
+      with:
+        config: ${{ steps.mkconfig.outputs.config-file }}
+        tag: localhost:1234/apk-scan
+
+    - id: grype-scan
+      uses: anchore/scan-action@ecfd0e98932e57ea8f68f29c4f418fc41a8194db
+      with:
+        image: localhost:1234/apk-scan
+        fail-build: false
+        severity-cutoff: low
+
+    - id: scan-report
+      shell: bash
+      run: |
+        echo "::set-output name=vuln-count::$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')"
