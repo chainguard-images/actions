@@ -67,6 +67,11 @@ inputs:
     required: false
     default: ''
 
+  package-append:
+    description: |
+      The value to pass to --package-append.
+    default: ''
+
   archs:
     description: |
       The architectures to build for.
@@ -247,6 +252,7 @@ runs:
         use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}
         repository-append: ${{ inputs.repository-append }}
+        package-append: ${{ inputs.package-append }}
         archs: ${{ inputs.archs }}
         debug: ${{ inputs.debug }}
         automount-src: ${{ inputs.automount-src }}
