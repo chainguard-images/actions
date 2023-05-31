@@ -56,6 +56,11 @@ inputs:
       The value to pass to --repository-append.
     default: ''
 
+  package-append:
+    description: |
+      The value to pass to --package-append.
+    default: ''
+
   archs:
     description: |
       The architectures to build for.
@@ -188,6 +193,7 @@ runs:
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
       [ -n "${{ inputs.repository-append }}" ] && repos="-r ${{ inputs.repository-append }}"
+      [ -n "${{ inputs.package-append }}" ] && packages="-p ${{ inputs.package-append }}"
       [ -n  "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
       build_options=""
       if [ -n "${{ inputs.build-options }}" ]; then
@@ -213,7 +219,7 @@ runs:
         ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.package-version-tag-stem && '--package-version-tag-stem' }} \
         '--debug' \
-        --image-refs="${{ inputs.image_refs }}" --stage-tags="${{ inputs.stage_tags }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $archs $build_options $packageVersionTag $packageVersionTagPrefix $tagSuffix $sbomPath | tee ${DIGEST_FILE}
+        --image-refs="${{ inputs.image_refs }}" --stage-tags="${{ inputs.stage_tags }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $build_options $packageVersionTag $packageVersionTagPrefix $tagSuffix $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})
       EOF
