@@ -169,9 +169,9 @@ runs:
       fi
       docker run -i --rm --entrypoint /bin/sh \
         --network host \
-        -v $PWD:/github/workspace \
+        -v $PWD:${{ github.workspace }} \
         -v /tmp:/tmp \
-        --workdir /github/workspace \
+        --workdir ${{ github.workspace }} \
         -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
         -e "GITHUB_TOKEN=${{ inputs.token }}" \
         -e "REPOSITORY=${{ inputs.repository }}" \
