@@ -218,18 +218,16 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Setup cosign
-      uses: sigstore/cosign-installer@v3
-
-    - uses: imjasonh/setup-crane@v0.1
+    - uses: sigstore/cosign-installer@v3
+    - uses: imjasonh/setup-crane@v0.3
 
     - name: Setup QEMU
-      uses: docker/setup-qemu-action@v1.2.0
+      uses: docker/setup-qemu-action@e81a89b1732b9c48d79cd809d8d81d79c4647a18 # v2.1.0
 
     - name: Generate snapshot date
       id: snapshot-date
       run: |
-        echo ::set-output name=date::$(date -u +%Y%m%d)
+        echo name=date::$(date -u +%Y%m%d) >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Generate dynamic inputs for apko-publish
@@ -266,7 +264,7 @@ runs:
         generic-user: ${{ inputs.generic-user }}
         generic-pass: ${{ inputs.generic-pass }}
 
-    - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
+    - uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}
