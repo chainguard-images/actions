@@ -227,7 +227,7 @@ runs:
     - name: Generate snapshot date
       id: snapshot-date
       run: |
-        echo name=date::$(date -u +%Y%m%d) >> $GITHUB_OUTPUT
+        echo date=$(date -u +%Y%m%d) >> $GITHUB_OUTPUT
       shell: bash
 
     - name: Generate dynamic inputs for apko-publish
