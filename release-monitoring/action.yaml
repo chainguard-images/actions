@@ -50,6 +50,6 @@ runs:
         echo "Response:"
         echo "--------"
         cat "${TMP}"
-        echo "::set-output name=latest-version::$(cat "${TMP}" | jq -r .latest_version)"
-        echo "::set-output name=stable-versions::$(cat "${TMP}" | jq -r '.stable_versions | join(",")')"
-        echo "::set-output name=all-versions::$(cat "${TMP}" | jq -r '.versions | join(",")')"
+        echo "latest-version=$(cat "${TMP}" | jq -r .latest_version)" >> $GITHUB_OUTPUT
+        echo "stable-versions=$(cat "${TMP}" | jq -r '.stable_versions | join(",")')" >> $GITHUB_OUTPUT
+        echo "all-versions=$(cat "${TMP}" | jq -r '.versions | join(",")')" >> $GITHUB_OUTPUT
