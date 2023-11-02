@@ -50,11 +50,6 @@ inputs:
     required: true
     default: ${{ github.token }}
 
-  use-docker-mediatypes:
-    description: |
-      Use Docker mediatypes for building the image.
-    required: false
-
   keyring-append:
     description: |
       The value to pass to --keyring-append.
@@ -86,29 +81,6 @@ inputs:
   additional-tags:
     description: |
       Additional tags for the final image.
-    required: false
-    default: ''
-
-  package-version-tag:
-    description: |
-      apko can tag the final image with the version of the corresponding apk package passed in here.
-    required: false
-    default: ''
-
-  package-version-tag-stem:
-    description: |
-      stem version tags.
-    required: false
-
-  package-version-tag-prefix:
-    description: |
-      prefix for version tag(s).
-    required: false
-    default: ''
-
-  tag-suffix:
-    description: |
-      Suffix to use with the package-version-tag feature, if any.
     required: false
     default: ''
 
@@ -147,11 +119,6 @@ inputs:
     description: |
       The value to pass to --image-refs.
     default: apko.images
-
-  stage_tags:
-    description: |
-      The value to pass to --stage-tags.
-    default: ''
 
   automount-src:
     description: |
@@ -246,8 +213,6 @@ runs:
         config: ${{ inputs.config }}
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         image_refs: ${{ inputs.image_refs }}
-        stage_tags: ${{ inputs.stage_tags }}
-        use-docker-mediatypes: ${{ inputs.use-docker-mediatypes }}
         keyring-append: ${{ inputs.keyring-append }}
         repository-append: ${{ inputs.repository-append }}
         package-append: ${{ inputs.package-append }}
@@ -255,10 +220,6 @@ runs:
         debug: ${{ inputs.debug }}
         automount-src: ${{ inputs.automount-src }}
         automount-dest: ${{ inputs.automount-dest }}
-        package-version-tag: ${{ inputs.package-version-tag }}
-        package-version-tag-stem: ${{ inputs.package-version-tag-stem }}
-        package-version-tag-prefix: ${{ inputs.package-version-tag-prefix }}
-        tag-suffix: ${{ inputs.tag-suffix }}
         build-options: ${{ inputs.build-options }}
         sbom-path: ${{ steps.apko-publish-inputs.outputs.sbom-path }}
         generic-user: ${{ inputs.generic-user }}
@@ -394,28 +355,13 @@ runs:
 
     # Now that everything else has completed successfully, update the target tag.
     # based on the digest produced above.
-    # If --stage-tags being used, simply append all tags to that file
     - shell: bash
       run: |
         set -x
-        STAGE_TAGS_FILE="${{ inputs.stage_tags }}"
 
-        if [[ "${STAGE_TAGS_FILE}" != "" ]]; then
-          cp "${STAGE_TAGS_FILE}" "${STAGE_TAGS_FILE}.tmp"
-          echo "${{ inputs.base-tag }}:${{ inputs.target-tag }}" >> "${STAGE_TAGS_FILE}.tmp"
-        else
-          crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:${{ inputs.target-tag }}
-        fi
+        crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:${{ inputs.target-tag }}
 
         for tag in $(echo ${{ inputs.additional-tags }} | sed "s/,/ /g")
         do
-          if [[ "${STAGE_TAGS_FILE}" != "" ]]; then
-            echo "${{ inputs.base-tag }}:$tag" >> "${STAGE_TAGS_FILE}.tmp"
-          else
-            crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:$tag
-          fi
+          crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:$tag
         done
-
-        if [[ "${STAGE_TAGS_FILE}" != "" ]]; then
-          sudo bash -c "cat '${STAGE_TAGS_FILE}.tmp' | uniq | sort > '${STAGE_TAGS_FILE}'"
-        fi

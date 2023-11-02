@@ -55,12 +55,6 @@ inputs:
       The tag to use for building the image.
     required: true
 
-  use-docker-mediatypes:
-    description: |
-      Use Docker mediatypes for building the image.
-    type: boolean
-    required: false
-
   vcs-url:
     description: |
       Whether to detect and embed the VCS URL (unlike apko we default this to false for reproducible builds).
@@ -119,7 +113,6 @@ runs:
       fi
       /usr/bin/apko build \
         --vcs=${{ inputs.vcs-url }} \
-        ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
         ${{ inputs.debug && '--debug' }} \
         ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $repos $packages $archs $build_options
       echo EXIT CODE: $?

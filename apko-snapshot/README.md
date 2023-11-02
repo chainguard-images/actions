@@ -15,9 +15,6 @@ The resulting image is signed with `cosign` keyless signing.
     config: foo.yaml
     # Base-tag is the base tag to use, required.
     base-tag: ghcr.io/distroless/foo
-    # use-docker-mediatypes is whether or not to use Docker mediatypes.
-    # Optional.
-    use-docker-mediatypes: false
 ```
 
 ## Scenarios
