@@ -135,10 +135,12 @@ runs:
         --network host \
         -v $PWD:${{ github.workspace }} \
         -v /tmp:/tmp \
+        -v $GITHUB_OUTPUT:$GITHUB_OUTPUT \
         --workdir ${{ github.workspace }} \
         -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
         -e "GITHUB_TOKEN=${{ inputs.token }}" \
         -e "REPOSITORY=${{ inputs.repository }}" \
+        -e "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
         "${APKO_IMAGE}" \
         -c "$(cat <<"EOF"
       set -o errexit
@@ -175,6 +177,6 @@ runs:
         '--debug' \
         --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $build_options $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
-      echo ::set-output name=digest::$(cat ${DIGEST_FILE})
+      echo "digest=$(cat ${DIGEST_FILE})" >> $GITHUB_OUTPUT
       EOF
       )"
