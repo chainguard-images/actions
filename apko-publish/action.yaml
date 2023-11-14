@@ -41,11 +41,6 @@ inputs:
       The value to pass to --image-refs.
     default: /tmp/apko.images
 
-  stage_tags:
-    description: |
-      The value to pass to --stage-tags.
-    default: ''
-
   keyring-append:
     description: |
       The value to pass to --keyring-append.
@@ -77,12 +72,6 @@ inputs:
       This is set as the SOURCE_DATE_EPOCH environment variable.
     default: ''
 
-  use-docker-mediatypes:
-    description: |
-      Use Docker mediatypes for building the image.
-    type: boolean
-    required: false
-
   vcs-url:
     description: |
       Whether to detect and embed the VCS URL (unlike apko we default this to false for reproducible builds).
@@ -106,31 +95,6 @@ inputs:
     description: |
       If automount-src is found, create a copy at this location (inside container)
     default: /work
-
-  package-version-tag:
-    description: |
-      apko can tag the final image with the version of the corresponding apk package passed in here.
-    required: false
-    default: ''
-
-  package-version-tag-stem:
-    description: |
-      stem version tags.
-    type: boolean
-    required: false
-    default: false
-
-  package-version-tag-prefix:
-    description: |
-      prefix for version tag(s).
-    required: false
-    default: ''
-
-  tag-suffix:
-    description: |
-      Suffix to use with the package-version-tag feature, if any.
-    required: false
-    default: ''
 
   sbom-path:
     description: |
@@ -203,23 +167,13 @@ runs:
         done
       fi
 
-      packageVersionTag="--package-version-tag=${{ inputs.package-version-tag }}"
-      if [ "${{ inputs.package-version-tag }}" == "" ]; then
-        repo=$(echo $REPOSITORY | cut -d'/' -f2)
-        packageVersionTag="--package-version-tag=$repo"
-      fi
-      packageVersionTagPrefix="--package-version-tag-prefix=${{ inputs.package-version-tag-prefix }}"
-
-      tagSuffix="--tag-suffix=${{ inputs.tag-suffix }}"
       sbomPath="--sbom-path=${{ inputs.sbom-path }}"
 
       export DIGEST_FILE=$(mktemp)
       /usr/bin/apko publish \
         --vcs=${{ inputs.vcs-url }} \
-        ${{ inputs.use-docker-mediatypes && '--use-docker-mediatypes' }} \
-        ${{ inputs.package-version-tag-stem && '--package-version-tag-stem' }} \
         '--debug' \
-        --image-refs="${{ inputs.image_refs }}" --stage-tags="${{ inputs.stage_tags }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $build_options $packageVersionTag $packageVersionTagPrefix $tagSuffix $sbomPath | tee ${DIGEST_FILE}
+        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $build_options $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})
       EOF
