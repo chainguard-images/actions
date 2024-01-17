@@ -113,7 +113,7 @@ runs:
       fi
       /usr/bin/apko build \
         --vcs=${{ inputs.vcs-url }} \
-        ${{ inputs.debug && '--debug' }} \
+        ${{ inputs.debug && '--log-level debug' }} \
         ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $repos $packages $archs $build_options
       echo EXIT CODE: $?
       EOF

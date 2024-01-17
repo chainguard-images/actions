@@ -172,7 +172,7 @@ runs:
       export DIGEST_FILE=$(mktemp)
       /usr/bin/apko publish \
         --vcs=${{ inputs.vcs-url }} \
-        '--debug' \
+        ${{ inputs.debug && '--log-level debug' }} \
         --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $build_options $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       echo ::set-output name=digest::$(cat ${DIGEST_FILE})
