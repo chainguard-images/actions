@@ -130,6 +130,11 @@ inputs:
       In subsequent steps, if automount-src is found, create a copy at this location (inside container)
     default: /work
 
+  source-date-epoch:
+    description: |
+      The UNIX timestamp to use as the source date when building an image.
+    default: ''
+
   annotations:
     description: |
       Annotations to add to the final image. Format: key1:value1,key2:value2.
@@ -231,6 +236,7 @@ runs:
         generic-user: ${{ inputs.generic-user }}
         generic-pass: ${{ inputs.generic-pass }}
         annotations: ${{ inputs.annotations }}
+        source-date-epoch: ${{ inputs.source-date-epoch }}
 
     - uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
       with:
