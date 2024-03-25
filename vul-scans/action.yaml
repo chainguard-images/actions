@@ -109,7 +109,7 @@ runs:
 
     - id: scan-start
       run: |
-        echo ::set-output name=date::$(TZ=Zulu date "+%Y-%m-%dT%H:%M:%SZ")
+        echo "date=$(TZ=Zulu date "+%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
       shell: bash
 
     - id: install-snyk
@@ -321,9 +321,9 @@ runs:
 
         echo "SNYK_COUNT: $SNYK_COUNT, GRYPE_COUNT: $GRYPE_COUNT, TRIVY_COUNT: $TRIVY_COUNT"
 
-        echo "::set-output name=SNYK_COUNT::$SNYK_COUNT"
-        echo "::set-output name=GRYPE_COUNT::$GRYPE_COUNT"
-        echo "::set-output name=TRIVY_COUNT::$TRIVY_COUNT"
+        echo "SNYK_COUNT=$SNYK_COUNT" >> $GITHUB_OUTPUT
+        echo "GRYPE_COUNT=$GRYPE_COUNT" >> $GITHUB_OUTPUT
+        echo "TRIVY_COUNT=$TRIVY_COUNT" >> $GITHUB_OUTPUT
 
     - name: Cue Verify Attestation
       id: cue-verify
