@@ -10,7 +10,7 @@ inputs:
   apko-image:
     description: |
       The digest of the apko image to invoke.
-    default: ghcr.io/wolfi-dev/apko:latest
+    default: ghcr.io/wolfi-dev/sdk:latest
     required: true
 
   config:

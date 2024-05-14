@@ -10,7 +10,7 @@ inputs:
   apko-image:
     description: |
       The digest of the apko image to invoke.
-    default: ghcr.io/wolfi-dev/apko:latest
+    default: ghcr.io/wolfi-dev/sdk:latest
     required: true
 
   config:
@@ -128,8 +128,8 @@ runs:
     run: |
       APKO_IMAGE="${{ inputs.apko-image }}"
       if [[ "${APKO_IMAGE}" == "" ]]; then
-        echo "Warning: using latest wolfi-dev/apko image since apko-image input was empty string."
-        APKO_IMAGE="ghcr.io/wolfi-dev/apko:latest"
+        echo "Warning: using latest wolfi-dev/sdk image since apko-image input was empty string."
+        APKO_IMAGE="ghcr.io/wolfi-dev/sdk:latest"
       fi
       docker run -i --rm --entrypoint /bin/sh \
         --network host \
