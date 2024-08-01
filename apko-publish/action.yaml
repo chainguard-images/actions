@@ -135,6 +135,7 @@ runs:
         --network host \
         -v $PWD:${{ github.workspace }} \
         -v /tmp:/tmp \
+        -v $GITHUB_OUTPUT:$GITHUB_OUTPUT \
         --workdir ${{ github.workspace }} \
         -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
         -e "GITHUB_TOKEN=${{ inputs.token }}" \
@@ -175,6 +176,6 @@ runs:
         ${{ inputs.debug && '--log-level debug' }} \
         --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $build_options $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
-      echo ::set-output name=digest::$(cat ${DIGEST_FILE})
+      echo "digest=$(cat ${DIGEST_FILE})" >> $GITHUB_OUTPUT
       EOF
       )"
