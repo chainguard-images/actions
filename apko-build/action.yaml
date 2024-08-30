@@ -19,6 +19,12 @@ inputs:
     default: .apko.yaml
     required: false
 
+  lockfile:
+    description: |
+      The lock file that constraints versions of packages.
+    default: ''
+    required: false
+
   keyring-append:
     description: |
       The value to pass to --keyring-append.
@@ -113,6 +119,7 @@ runs:
       fi
       /usr/bin/apko build \
         --vcs=${{ inputs.vcs-url }} \
+        --lockfile=${{ inputs.lockfile }} \
         ${{ inputs.debug && '--log-level debug' }} \
         ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $repos $packages $archs $build_options
       echo EXIT CODE: $?
