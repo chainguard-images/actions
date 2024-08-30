@@ -19,6 +19,12 @@ inputs:
     required: true
     default: .apko.yaml
 
+  lockfile:
+    description: |
+      The lock file that constraints versions of packages.
+    required: false
+    default: ''
+
   base-tag:
     description: |
       The container repository into which we should publish images.
@@ -222,6 +228,7 @@ runs:
       with:
         apko-image: ${{ inputs.apko-image }}
         config: ${{ inputs.config }}
+        lockfile: ${{ inputs.lockfile }}
         tag: ${{ inputs.base-tag }}:${{ inputs.target-tag }}-${{ steps.snapshot-date.outputs.date }}
         image_refs: ${{ inputs.image_refs }}
         keyring-append: ${{ inputs.keyring-append }}

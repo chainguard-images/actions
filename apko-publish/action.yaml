@@ -18,6 +18,12 @@ inputs:
       The config file to use for building the image.
     default: .apko.yaml
 
+  lockfile:
+    description: |
+      The lock file that constraints versions of packages.
+    required: false
+    default: ''
+
   tag:
     description: |
       The tag to use for publishing the image.
@@ -181,6 +187,7 @@ runs:
       export DIGEST_FILE="/tmp/digest"
       /usr/bin/apko publish \
         --vcs=${{ inputs.vcs-url }} \
+        --lockfile=${{ inputs.lockfile }} \
         ${{ inputs.debug && '--log-level debug' }} \
         --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $annotations $build_options $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
