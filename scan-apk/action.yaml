@@ -70,7 +70,7 @@ runs:
         tag: localhost:1234/apk-scan
 
     - id: grype-scan
-      uses: anchore/scan-action@ecfd0e98932e57ea8f68f29c4f418fc41a8194db
+      uses: anchore/scan-action@869c549e657a088dc0441b08ce4fc0ecdac2bb65 # v5.3.0
       with:
         image: localhost:1234/apk-scan
         fail-build: false
