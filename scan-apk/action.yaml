@@ -45,7 +45,7 @@ runs:
     - shell: bash
       id: mkconfig
       run: |
-        TMP=$(mktemp)
+        TMP="$GITHUB_WORKSPACE/config_file"
 
         cat > "${TMP}" <<EOF
         contents:
@@ -58,15 +58,15 @@ runs:
         - ${{ inputs.architecture }}
         EOF
 
-        echo "config_file=${TMP}" >> $GITHUB_OUTPUT
+        echo "CONFIG_FILE=${TMP}" >> $GITHUB_ENV
 
     - shell: bash
       run: |
-        cat ${{ steps.mkconfig.outputs.config_file }}
+        cat ${{ env.CONFIG_FILE }}
 
     - uses: ./apko-publish
       with:
-        config: ${{ steps.mkconfig.outputs.config_file }}
+        config: ${{ env.CONFIG_FILE }}
         tag: localhost:1234/apk-scan
 
     - id: grype-scan
