@@ -45,7 +45,7 @@ runs:
     - shell: bash
       id: mkconfig
       run: |
-        TMP=$(mktemp)
+        TMP="$GITHUB_WORKSPACE/config_file"
 
         cat > "${TMP}" <<EOF
         contents:
@@ -58,15 +58,15 @@ runs:
         - ${{ inputs.architecture }}
         EOF
 
-        echo "::set-output name=config-file::${TMP}"
+        echo "CONFIG_FILE=${TMP}" >> $GITHUB_ENV
 
     - shell: bash
       run: |
-        cat ${{ steps.mkconfig.outputs.config-file }}
+        cat ${{ env.CONFIG_FILE }}
 
     - uses: ./apko-publish
       with:
-        config: ${{ steps.mkconfig.outputs.config-file }}
+        config: ${{ env.CONFIG_FILE }}
         tag: localhost:1234/apk-scan
 
     - id: grype-scan
@@ -79,4 +79,4 @@ runs:
     - id: scan-report
       shell: bash
       run: |
-        echo "::set-output name=vuln-count::$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')"
+        echo "vuln-count=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')" >> $GITHUB_OUTPUT
