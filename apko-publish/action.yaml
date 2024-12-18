@@ -116,6 +116,12 @@ inputs:
     required: false
     default: ''
 
+  annotations:
+    description: |
+      Annotations to add to the image. Format: key1:value1,key2:value2.
+    required: false
+    default: ''
+
 outputs:
   digest:
     value: ${{ steps.docker-run.outputs.digest }}
@@ -161,6 +167,7 @@ runs:
       [ -n "${{ inputs.repository-append }}" ] && repos="-r ${{ inputs.repository-append }}"
       [ -n "${{ inputs.package-append }}" ] && packages="-p ${{ inputs.package-append }}"
       [ -n  "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
+      [ -n  "${{ inputs.annotations }}" ] && annotations="--annotations ${{ inputs.annotations }}"
       build_options=""
       if [ -n "${{ inputs.build-options }}" ]; then
         opts="${{ inputs.build-options }}"
@@ -175,7 +182,7 @@ runs:
       /usr/bin/apko publish \
         --vcs=${{ inputs.vcs-url }} \
         ${{ inputs.debug && '--log-level debug' }} \
-        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $build_options $sbomPath | tee ${DIGEST_FILE}
+        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $annotations $build_options $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       EOF
       )"
