@@ -248,12 +248,7 @@ runs:
     - name: Scan image with Anchore/Grype
       if: inputs.RUN_GRYPE == 'true'
       id: grype-scan
-      # TODO: use the anchore action again. Please see:
-      # - https://github.com/anchore/grype/issues/1102
-      # - https://github.com/anchore/grype/pull/1104
-      # - https://github.com/anchore/scan-action/pull/212
-      # uses: anchore/scan-action@ecfd0e98932e57ea8f68f29c4f418fc41a8194db
-      uses: jdolitsky/scan-action@aa58532757c43a60a2e2e0f2268065fdb50ee244 # The "fix-install" branch
+      uses: anchore/scan-action@abae793926ec39a78ab18002bc7fc45bbbd94342 # v6.0.0
       with:
         image: ${{ inputs.image }}
         fail-build: false
