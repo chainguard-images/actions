@@ -54,6 +54,12 @@ inputs:
       The value to pass to --keyring-append.
     default: ''
 
+  build-repository-append:
+    description: |
+      The value to pass to --build-repository-append.
+    required: false
+    default: ''
+
   repository-append:
     description: |
       The value to pass to --repository-append.
@@ -170,6 +176,7 @@ runs:
       fi
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
+      [ -n "${{ inputs.build-repository-append }}" ] && build_repos="-b ${{ inputs.build-repository-append }}"
       [ -n "${{ inputs.repository-append }}" ] && repos="-r ${{ inputs.repository-append }}"
       [ -n "${{ inputs.package-append }}" ] && packages="-p ${{ inputs.package-append }}"
       [ -n  "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
@@ -189,7 +196,7 @@ runs:
         --vcs=${{ inputs.vcs-url }} \
         --lockfile=${{ inputs.lockfile }} \
         ${{ inputs.debug && '--log-level debug' }} \
-        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $repos $packages $archs $annotations $build_options $sbomPath | tee ${DIGEST_FILE}
+        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $build_repos $repos $packages $archs $annotations $build_options $sbomPath | tee ${DIGEST_FILE}
       echo EXIT CODE: $?
       EOF
       )"
