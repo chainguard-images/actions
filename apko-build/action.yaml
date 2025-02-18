@@ -30,6 +30,12 @@ inputs:
       The value to pass to --keyring-append.
     default: ''
 
+  build-repository-append:
+    description: |
+      The value to pass to --build-repository-append.
+    required: false
+    default: ''
+
   repository-append:
     description: |
       The value to pass to --repository-append.
@@ -107,6 +113,7 @@ runs:
       fi
       [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
       [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
+      [ -n "${{ inputs.build-repository-append }}" ] && build_repos="-b ${{ inputs.build-repository-append }}"
       [ -n "${{ inputs.repository-append }}" ] && repos="-r ${{ inputs.repository-append }}"
       [ -n "${{ inputs.package-append }}" ] && packages="-p ${{ inputs.package-append }}"
       [ -n "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
@@ -121,7 +128,7 @@ runs:
         --vcs=${{ inputs.vcs-url }} \
         --lockfile=${{ inputs.lockfile }} \
         ${{ inputs.debug && '--log-level debug' }} \
-        ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $repos $packages $archs $build_options
+        ${{ inputs.config }} ${{ inputs.tag }} output.tar $keys $build_repos $repos $packages $archs $build_options
       echo EXIT CODE: $?
       EOF
       )"
