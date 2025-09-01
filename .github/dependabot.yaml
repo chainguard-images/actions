@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  # vul-scans
+  - package-ecosystem: "github-actions"
+    directory: "/vul-scans"
+    schedule:
+      interval: "weekly"
+  # tag
+  - package-ecosystem: "github-actions"
+    directory: "/tag"
+    schedule:
+      interval: "weekly"
+  # apko-snapshot
+  - package-ecosystem: "github-actions"
+    directory: "/apko-snapshot"
+    schedule:
+      interval: "weekly"
+  # scan-apk
+  - package-ecosystem: "github-actions"
+    directory: "/scan-apk"
+    schedule:
+      interval: "weekly"
