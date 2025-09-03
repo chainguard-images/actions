@@ -57,7 +57,7 @@ runs:
         repository: chainguard-images/actions
     - uses: imjasonh/setup-crane@v0.1
     - name: Set up Go
-      uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # v3.3.0
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
       with:
         go-version: 1.19
         check-latest: true
