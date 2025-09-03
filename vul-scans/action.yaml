@@ -100,7 +100,7 @@ runs:
     - name: Setup cosign
       uses: sigstore/cosign-installer@7cc35d7fdbe70d4278a0c96779081e6fac665f88 # v2.8.0
 
-    - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
+    - uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
       if: inputs.DOCKER_LOGIN == 'true'
       with:
         registry: ${{ inputs.registry }}
