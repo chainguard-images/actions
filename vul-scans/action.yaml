@@ -98,7 +98,7 @@ runs:
   using: composite
   steps:
     - name: Setup cosign
-      uses: sigstore/cosign-installer@074636bf86584fb361059563d092a9cfb6560f80 # v2.8.0
+      uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
       if: inputs.DOCKER_LOGIN == 'true'
