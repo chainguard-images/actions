@@ -55,11 +55,12 @@ runs:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
         repository: chainguard-images/actions
-    - uses: imjasonh/setup-crane@v0.4
+    - uses: imjasonh/setup-crane@31b88efe9de28ae0ffa220711af4b60be9435f6e # v0.4
+
     - name: Set up Go
       uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # v3.3.0
       with:
-        go-version: 1.19
+        go-version: 1.25
         check-latest: true
 
     - uses: docker/login-action@bb984efc561711aaa26e433c32c3521176eae55b # v1.13.0
