@@ -208,8 +208,8 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: sigstore/cosign-installer@v3
-    - uses: imjasonh/setup-crane@v0.4
+    - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+    - uses: imjasonh/setup-crane@31b88efe9de28ae0ffa220711af4b60be9435f6e # v0.4
 
     - name: Setup QEMU
       uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
@@ -229,7 +229,7 @@ runs:
 
     # Only publish the versioned tag to start.  After we have signed and
     # attested things, then we use crane to update :latest below.
-    - uses: chainguard-images/actions/apko-publish@main
+    - uses: chainguard-images/actions/apko-publish@f1693758ea2eebfada391d95a4fb4c727a8aa15d # main
       id: apko
       with:
         apko-image: ${{ inputs.apko-image }}
