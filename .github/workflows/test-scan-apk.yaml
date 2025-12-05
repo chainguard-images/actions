@@ -35,7 +35,7 @@ jobs:
     - uses: ./scan-apk
       id: scan
       with:
-        package: ko=0.13.0-r4
+        package: ko=0.18.0-r8
     - run: echo ${{ steps.scan.outputs.vuln-count }}
 
   test-alpine:
