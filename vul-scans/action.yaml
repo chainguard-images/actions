@@ -248,7 +248,7 @@ runs:
     - name: Scan image with Anchore/Grype
       if: inputs.RUN_GRYPE == 'true'
       id: grype-scan
-      uses: anchore/scan-action@40a61b52209e9d50e87917c5b901783d546b12d0 # v7.2.1
+      uses: anchore/scan-action@3c9a191a0fbab285ca6b8530b5de5a642cba332f # v7.2.2
       with:
         image: ${{ inputs.image }}
         fail-build: false
