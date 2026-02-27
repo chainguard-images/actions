@@ -134,6 +134,13 @@ inputs:
     required: false
     default: ''
 
+  workdir:
+    description: |
+      Working directory inside the container. Defaults to the GitHub workspace mount.
+      You can set this to a subdirectory (e.g. ${{ github.workspace }}/fish/sauce/package)
+    required: false
+    default: ${{ github.workspace }}
+
 outputs:
   digest:
     value: ${{ steps.docker-run.outputs.digest }}
@@ -155,7 +162,7 @@ runs:
         --network host \
         -v $PWD:${{ github.workspace }} \
         -v /tmp:/tmp \
-        --workdir ${{ github.workspace }} \
+        --workdir ${{ inputs.workdir }} \
         -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
         -e "GITHUB_TOKEN=${{ inputs.token }}" \
         -e "REPOSITORY=${{ inputs.repository }}" \
