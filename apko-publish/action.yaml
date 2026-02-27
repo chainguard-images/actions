@@ -137,7 +137,7 @@ inputs:
   workdir:
     description: |
       Working directory inside the container. Defaults to the GitHub workspace mount.
-      You can set this to a subdirectory (e.g. ${{ github.workspace }}/fish/sauce/package)
+      You can set this to a subdirectory (e.g. fish/sauce/package)
     required: false
     default: ''
 
