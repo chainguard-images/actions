@@ -91,6 +91,13 @@ inputs:
       If automount-src is found, create a copy at this location (inside container)
     default: /work
 
+  workdir:
+    description: |
+      Working directory inside the container. Defaults to the GitHub workspace mount.
+      You can set this to a subdirectory (e.g. fish/sauce/package)
+    required: false
+    default: ''
+
 runs:
   using: composite
   steps:
@@ -101,9 +108,19 @@ runs:
         echo "Warning: using latest wolfi-dev/sdk image since apko-image input was empty string."
         APKO_IMAGE="ghcr.io/wolfi-dev/sdk:latest"
       fi
+
+      WORKDIR_INPUT='${{ inputs.workdir }}'
+      if [[ -z "${WORKDIR_INPUT}" ]]; then
+        WORKDIR="${{ github.workspace }}"
+      elif [[ "${WORKDIR_INPUT}" = /* ]]; then
+        WORKDIR="${WORKDIR_INPUT}"
+      else
+        WORKDIR="${{ github.workspace }}/${WORKDIR_INPUT}"
+      fi
+
       docker run -i --rm --entrypoint /bin/sh \
         -v $PWD:${{ github.workspace }} \
-        --workdir ${{ github.workspace }} \
+        --workdir "${WORKDIR}" \
         "${APKO_IMAGE}" \
         -c "$(cat <<"EOF"
       set -o errexit

@@ -134,6 +134,13 @@ inputs:
     required: false
     default: ''
 
+  workdir:
+    description: |
+      Working directory inside the container. Defaults to the GitHub workspace mount.
+      You can set this to a subdirectory (e.g. fish/sauce/package)
+    required: false
+    default: ''
+
 outputs:
   digest:
     value: ${{ steps.docker-run.outputs.digest }}
@@ -151,11 +158,21 @@ runs:
         echo "Warning: using latest wolfi-dev/sdk image since apko-image input was empty string."
         APKO_IMAGE="ghcr.io/wolfi-dev/sdk:latest"
       fi
+
+      WORKDIR_INPUT='${{ inputs.workdir }}'
+      if [[ -z "${WORKDIR_INPUT}" ]]; then
+        WORKDIR="${{ github.workspace }}"
+      elif [[ "${WORKDIR_INPUT}" = /* ]]; then
+        WORKDIR="${WORKDIR_INPUT}"
+      else
+        WORKDIR="${{ github.workspace }}/${WORKDIR_INPUT}"
+      fi
+
       docker run -i --rm --entrypoint /bin/sh \
         --network host \
         -v $PWD:${{ github.workspace }} \
         -v /tmp:/tmp \
-        --workdir ${{ github.workspace }} \
+        --workdir "${WORKDIR}" \
         -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
         -e "GITHUB_TOKEN=${{ inputs.token }}" \
         -e "REPOSITORY=${{ inputs.repository }}" \
