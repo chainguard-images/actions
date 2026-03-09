@@ -38,7 +38,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: chainguard-dev/actions/setup-registry@71714a76c3df10b544595a2294c16649dc3472e5 # v1.6.5
+    - uses: chainguard-dev/actions/setup-registry@5e84f02889db0de213947c80a5d75b51bb899048 # v1.6.7
       with:
         port: 1234
 
