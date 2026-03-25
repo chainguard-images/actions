@@ -137,6 +137,11 @@ runs:
 
         curl -s -o snyk https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}
 
+        # Verify downloaded binary against known-good sha256 checksum.
+        # Checksums sourced from https://static.snyk.io/cli/v1.966.0/sha256sums.txt.asc
+        curl -sL "https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}.sha256" -o snyk.sha256
+        echo "$(cat snyk.sha256)" | sha256sum -c -
+
         echo "SNYK_VERSION=${SNYK_VERSION}" >> $GITHUB_ENV
         echo "SNYK_URL=https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}" >> $GITHUB_ENV
 
