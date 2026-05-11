@@ -229,7 +229,7 @@ runs:
 
     # Only publish the versioned tag to start.  After we have signed and
     # attested things, then we use crane to update :latest below.
-    - uses: chainguard-images/actions/apko-publish@9a671113d0b443e4b16380bac9a80721fb6554bd # v1.0.26
+    - uses: chainguard-images/actions/apko-publish@2e909a637eb363caeccbe3946fa157abb4a2aa4d # v1.0.27
       id: apko
       with:
         apko-image: ${{ inputs.apko-image }}
