@@ -134,6 +134,12 @@ inputs:
     required: false
     default: ''
 
+  docker-args:
+    description: |
+      Additional arguments to pass to the docker run command.
+    required: false
+    default: ''
+
 outputs:
   digest:
     value: ${{ steps.docker-run.outputs.digest }}
@@ -159,6 +165,7 @@ runs:
         -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
         -e "GITHUB_TOKEN=${{ inputs.token }}" \
         -e "REPOSITORY=${{ inputs.repository }}" \
+        ${{ inputs.docker-args }} \
         "${APKO_IMAGE}" \
         -c "$(cat <<"EOF"
       set -o errexit
@@ -166,7 +173,7 @@ runs:
 
       if [[ "${{ inputs.generic-user }}" != "" && "${{ inputs.generic-pass }}" != "" ]]; then
         echo "${{ inputs.generic-pass }}" | \
-          /usr/bin/apko login -u "${{ inputs.generic-user }}" \
+          /usr/bin/apko login -u '${{ inputs.generic-user }}' \
             --password-stdin "$(echo "${{ inputs.tag }}" | cut -d'/' -f1)"
       fi
 
