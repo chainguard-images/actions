@@ -38,7 +38,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: chainguard-dev/actions/setup-registry@b2555de0cf9724fb9b49d050ff18bd1f49562ba7 # v1.6.29
+    - uses: chainguard-dev/actions/setup-registry@a9d4aa7202a63f8a6b8f81bb1570a0ca54460ac5 # v1.6.34
       with:
         port: 1234
 
@@ -70,7 +70,7 @@ runs:
         tag: localhost:1234/apk-scan
 
     - id: grype-scan
-      uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+      uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
       with:
         image: localhost:1234/apk-scan
         fail-build: false
