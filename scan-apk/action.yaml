@@ -49,20 +49,25 @@ runs:
 
         cat > "${TMP}" <<EOF
         contents:
-          repositories: $(echo "${{ inputs.repositories }}" | tr -d '[:space:]' | jq --raw-input -c --slurp 'split(",")')
-          keyring: $(echo "${{ inputs.keyring }}" | tr -d '[:space:]' | jq --raw-input -c --slurp 'split(",")')
+          repositories: $(echo "${INPUTS_REPOSITORIES}" | tr -d '[:space:]' | jq --raw-input -c --slurp 'split(",")')
+          keyring: $(echo "${INPUTS_KEYRING}" | tr -d '[:space:]' | jq --raw-input -c --slurp 'split(",")')
           packages:
-          - ${{ inputs.package }}
+          - ${INPUTS_PACKAGE}
 
         archs:
-        - ${{ inputs.architecture }}
+        - ${INPUTS_ARCHITECTURE}
         EOF
 
         echo "CONFIG_FILE=${TMP}" >> $GITHUB_ENV
+      env:
+        INPUTS_REPOSITORIES: ${{ inputs.repositories }}
+        INPUTS_KEYRING: ${{ inputs.keyring }}
+        INPUTS_PACKAGE: ${{ inputs.package }}
+        INPUTS_ARCHITECTURE: ${{ inputs.architecture }}
 
     - shell: bash
       run: |
-        cat ${{ env.CONFIG_FILE }}
+        cat ${CONFIG_FILE}
 
     - uses: ./apko-publish
       with:
@@ -79,4 +84,6 @@ runs:
     - id: scan-report
       shell: bash
       run: |
-        echo "vuln-count=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')" >> $GITHUB_OUTPUT
+        echo "vuln-count=$(cat ${STEPS_GRYPE_SCAN_OUTPUTS_SARIF} | jq '.runs[0].results | length')" >> $GITHUB_OUTPUT
+      env:
+        STEPS_GRYPE_SCAN_OUTPUTS_SARIF: ${{ steps.grype-scan.outputs.sarif }}

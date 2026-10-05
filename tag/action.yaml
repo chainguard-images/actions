@@ -71,10 +71,15 @@ runs:
 
     - name: Run tagging script
       shell: bash
+      env:
+        DISTROLESS_IMAGE: ${{ inputs.distroless_image }}
+        DOCKER_IMAGE_TAG: ${{ inputs.docker_image_tag }}
+        DOCKER_IMAGE: ${{ inputs.docker_image }}
+        EXCLUDED_TAGS: ${{ inputs.excluded_tags }}
       run: |
         (cd tag && go build -o ../tag-run main.go)
         ./tag-run \
-          -distroless-image="${{ inputs.distroless_image }}" \
-          -docker-image-tag="${{ inputs.docker_image_tag }}" \
-          -docker-image="${{ inputs.docker_image }}" \
-          -excluded-tags="${{ inputs.excluded_tags }}"
+          -distroless-image="${DISTROLESS_IMAGE}" \
+          -docker-image-tag="${DOCKER_IMAGE_TAG}" \
+          -docker-image="${DOCKER_IMAGE}" \
+          -excluded-tags="${EXCLUDED_TAGS}"

@@ -39,13 +39,13 @@ runs:
       shell: bash
       run: |
         set -x
-        if [[ "${{ inputs.api-token }}" == "" ]]; then
+        if [[ "${INPUTS_API_TOKEN}" == "" ]]; then
           echo "Warning: running without a registered API token"
         fi
         TMP="$(mktemp /tmp/release-monitoring-action.XXXXXX)"
         trap "rm -rf ${TMP}" EXIT
-        curl --fail -L -v -H "Authorization: Bearer ${{ inputs.api-token }}" \
-          "https://release-monitoring.org/api/v2/versions/?project_id=${{ inputs.project-id }}" \
+        curl --fail -L -v -H "Authorization: Bearer ${INPUTS_API_TOKEN}" \
+          "https://release-monitoring.org/api/v2/versions/?project_id=${INPUTS_PROJECT_ID}" \
           > "${TMP}"
         echo "Response:"
         echo "--------"
@@ -53,3 +53,6 @@ runs:
         echo "latest-version=$(cat "${TMP}" | jq -r .latest_version)" >> $GITHUB_OUTPUT
         echo "stable-versions=$(cat "${TMP}" | jq -r '.stable_versions | join(",")')" >> $GITHUB_OUTPUT
         echo "all-versions=$(cat "${TMP}" | jq -r '.versions | join(",")')" >> $GITHUB_OUTPUT
+      env:
+        INPUTS_API_TOKEN: ${{ inputs.api-token }}
+        INPUTS_PROJECT_ID: ${{ inputs.project-id }}

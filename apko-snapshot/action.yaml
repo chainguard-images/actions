@@ -261,9 +261,12 @@ runs:
     - shell: bash
       env:
         COSIGN_EXPERIMENTAL: "true"
+        INPUTS_IMAGE_REFS: ${{ inputs.image_refs }}
+        INPUTS_FULCIO_URL: ${{ inputs.FULCIO_URL }}
+        INPUTS_REKOR_URL: ${{ inputs.REKOR_URL }}
       run: |
-        cosign sign --yes $(cat ${{ inputs.image_refs }}) \
-            --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
+        cosign sign --yes $(cat ${INPUTS_IMAGE_REFS}) \
+            --fulcio-url ${INPUTS_FULCIO_URL}  --rekor-url ${INPUTS_REKOR_URL} \
             -a sha=${{ github.sha }} \
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
@@ -272,20 +275,20 @@ runs:
       id: extract
       shell: bash
       run: |
-        output="digest-index=${{ steps.apko.outputs.digest }}"
+        output="digest-index=${STEPS_APKO_OUTPUTS_DIGEST}"
         echo "Adding GitHub step output: ${output}"
         echo "${output}" >> $GITHUB_OUTPUT
-        output="shortdigest-index=$(echo "${{ steps.apko.outputs.digest }}" | cut -d@ -f 2)"
+        output="shortdigest-index=$(echo "${STEPS_APKO_OUTPUTS_DIGEST}" | cut -d@ -f 2)"
         echo "Adding GitHub step output: ${output}"
         echo "${output}" >> $GITHUB_OUTPUT
 
         # If its an index, extract the platform digests too
-        CRANE_MANIFEST_OUTPUT="$(crane manifest ${{ steps.apko.outputs.digest }})"
+        CRANE_MANIFEST_OUTPUT="$(crane manifest ${STEPS_APKO_OUTPUTS_DIGEST})"
         if [[ "$(echo $CRANE_MANIFEST_OUTPUT | jq -r .mediaType)" == "application/vnd.oci.image.index.v1+json" ]]; then
           for combo in `echo $CRANE_MANIFEST_OUTPUT | jq -r '.manifests[] | .platform.architecture + .platform.variant + "_" + .digest'`; do
             arch="$(echo "${combo}" | cut -d "_" -f1)"
             digest="$(echo "${combo}" | cut -d "_" -f2)"
-            output="digest-${arch}=${{ inputs.base-tag }}@${digest}"
+            output="digest-${arch}=${INPUTS_BASE_TAG}@${digest}"
             echo "Adding GitHub step output: ${output}"
             echo "${output}" >> $GITHUB_OUTPUT
             output="shortdigest-${arch}=${digest}"
@@ -293,12 +296,24 @@ runs:
             echo "${output}" >> $GITHUB_OUTPUT
           done
         fi
+      env:
+        STEPS_APKO_OUTPUTS_DIGEST: ${{ steps.apko.outputs.digest }}
+        INPUTS_BASE_TAG: ${{ inputs.base-tag }}
 
     - name: Upload SBOMs as attestations
       if: ${{ inputs.sbom-attest == 'true' }}
       shell: bash
       env:
         COSIGN_EXPERIMENTAL: "true"
+        STEPS_EXTRACT_OUTPUTS_DIGEST_INDEX: ${{ steps.extract.outputs.digest-index }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_AMD64: ${{ steps.extract.outputs.digest-amd64 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_ARM64: ${{ steps.extract.outputs.digest-arm64 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_386: ${{ steps.extract.outputs.digest-386 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV6: ${{ steps.extract.outputs.digest-armv6 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV7: ${{ steps.extract.outputs.digest-armv7 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_PPC64LE: ${{ steps.extract.outputs.digest-ppc64le }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_RISCV64: ${{ steps.extract.outputs.digest-riscv64 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_S390X: ${{ steps.extract.outputs.digest-s390x }}
       run: |
         function attest_sbom {
           arch="${1}"
@@ -318,17 +333,17 @@ runs:
         }
 
         # First attest the index SBOM
-        attest_sbom "index" "${{ steps.extract.outputs.digest-index }}" "sbom-index.spdx.json"
+        attest_sbom "index" "${STEPS_EXTRACT_OUTPUTS_DIGEST_INDEX}" "sbom-index.spdx.json"
 
         # Next, for each architecture (if present)
-        [[ "${{ steps.extract.outputs.digest-amd64 }}" == "" ]] || attest_sbom "amd64" "${{ steps.extract.outputs.digest-amd64 }}" "sbom-x86_64.spdx.json"
-        [[ "${{ steps.extract.outputs.digest-arm64 }}" == "" ]] || attest_sbom "arm64" "${{ steps.extract.outputs.digest-arm64 }}" "sbom-aarch64.spdx.json"
-        [[ "${{ steps.extract.outputs.digest-386 }}" == "" ]] || attest_sbom "386" "${{ steps.extract.outputs.digest-386 }}" "sbom-x86.spdx.json"
-        [[ "${{ steps.extract.outputs.digest-armv6 }}" == "" ]] || attest_sbom "armv6" "${{ steps.extract.outputs.digest-armv6 }}" "sbom-armhf.spdx.json"
-        [[ "${{ steps.extract.outputs.digest-armv7 }}" == "" ]] || attest_sbom "armv7" "${{ steps.extract.outputs.digest-armv7 }}" "sbom-armv7.spdx.json"
-        [[ "${{ steps.extract.outputs.digest-ppc64le }}" == "" ]] || attest_sbom "ppc64le" "${{ steps.extract.outputs.digest-ppc64le }}" "sbom-ppc64le.spdx.json"
-        [[ "${{ steps.extract.outputs.digest-riscv64 }}" == "" ]] || attest_sbom "riscv64" "${{ steps.extract.outputs.digest-riscv64 }}" "sbom-riscv64.spdx.json"
-        [[ "${{ steps.extract.outputs.digest-s390x }}" == "" ]] || attest_sbom "s390x" "${{ steps.extract.outputs.digest-s390x }}" "sbom-s390x.spdx.json"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_AMD64}" == "" ]] || attest_sbom "amd64" "${STEPS_EXTRACT_OUTPUTS_DIGEST_AMD64}" "sbom-x86_64.spdx.json"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARM64}" == "" ]] || attest_sbom "arm64" "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARM64}" "sbom-aarch64.spdx.json"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_386}" == "" ]] || attest_sbom "386" "${STEPS_EXTRACT_OUTPUTS_DIGEST_386}" "sbom-x86.spdx.json"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV6}" == "" ]] || attest_sbom "armv6" "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV6}" "sbom-armhf.spdx.json"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV7}" == "" ]] || attest_sbom "armv7" "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV7}" "sbom-armv7.spdx.json"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_PPC64LE}" == "" ]] || attest_sbom "ppc64le" "${STEPS_EXTRACT_OUTPUTS_DIGEST_PPC64LE}" "sbom-ppc64le.spdx.json"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_RISCV64}" == "" ]] || attest_sbom "riscv64" "${STEPS_EXTRACT_OUTPUTS_DIGEST_RISCV64}" "sbom-riscv64.spdx.json"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_S390X}" == "" ]] || attest_sbom "s390x" "${STEPS_EXTRACT_OUTPUTS_DIGEST_S390X}" "sbom-s390x.spdx.json"
 
     # See https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container
     - name: 'SLSA: Generate provenance and attest'
@@ -342,6 +357,15 @@ runs:
         GENERATOR_RELEASE_BINARY_SHA256: 6d8b83327ac2134aa8760e1e4f9cd5d3fdbcb56599e39be2cd965f1e04aa8ede
         GH_TOKEN: "${{ github.token }}"
         GITHUB_CONTEXT: "${{ toJSON(github) }}" # Needed by slsa-generator-container
+        STEPS_EXTRACT_OUTPUTS_DIGEST_INDEX: ${{ steps.extract.outputs.digest-index }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_AMD64: ${{ steps.extract.outputs.digest-amd64 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_ARM64: ${{ steps.extract.outputs.digest-arm64 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_386: ${{ steps.extract.outputs.digest-386 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV6: ${{ steps.extract.outputs.digest-armv6 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV7: ${{ steps.extract.outputs.digest-armv7 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_PPC64LE: ${{ steps.extract.outputs.digest-ppc64le }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_RISCV64: ${{ steps.extract.outputs.digest-riscv64 }}
+        STEPS_EXTRACT_OUTPUTS_DIGEST_S390X: ${{ steps.extract.outputs.digest-s390x }}
       run: |
         set -x
         # Fetch the generator
@@ -368,17 +392,17 @@ runs:
         }
 
         # First attest the index
-        attest_slsa "index" "${{ steps.extract.outputs.digest-index }}"
+        attest_slsa "index" "${STEPS_EXTRACT_OUTPUTS_DIGEST_INDEX}"
 
         # Next, for each architecture (if present)
-        [[ "${{ steps.extract.outputs.digest-amd64 }}" == "" ]] || attest_slsa "amd64" "${{ steps.extract.outputs.digest-amd64 }}"
-        [[ "${{ steps.extract.outputs.digest-arm64 }}" == "" ]] || attest_slsa "arm64" "${{ steps.extract.outputs.digest-arm64 }}"
-        [[ "${{ steps.extract.outputs.digest-386 }}" == "" ]] || attest_slsa "386" "${{ steps.extract.outputs.digest-386 }}"
-        [[ "${{ steps.extract.outputs.digest-armv6 }}" == "" ]] || attest_slsa "armv6" "${{ steps.extract.outputs.digest-armv6 }}"
-        [[ "${{ steps.extract.outputs.digest-armv7 }}" == "" ]] || attest_slsa "armv7" "${{ steps.extract.outputs.digest-armv7 }}"
-        [[ "${{ steps.extract.outputs.digest-ppc64le }}" == "" ]] || attest_slsa "ppc64le" "${{ steps.extract.outputs.digest-ppc64le }}"
-        [[ "${{ steps.extract.outputs.digest-riscv64 }}" == "" ]] || attest_slsa "riscv64" "${{ steps.extract.outputs.digest-riscv64 }}"
-        [[ "${{ steps.extract.outputs.digest-s390x }}" == "" ]] || attest_slsa "s390x" "${{ steps.extract.outputs.digest-s390x }}"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_AMD64}" == "" ]] || attest_slsa "amd64" "${STEPS_EXTRACT_OUTPUTS_DIGEST_AMD64}"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARM64}" == "" ]] || attest_slsa "arm64" "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARM64}"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_386}" == "" ]] || attest_slsa "386" "${STEPS_EXTRACT_OUTPUTS_DIGEST_386}"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV6}" == "" ]] || attest_slsa "armv6" "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV6}"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV7}" == "" ]] || attest_slsa "armv7" "${STEPS_EXTRACT_OUTPUTS_DIGEST_ARMV7}"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_PPC64LE}" == "" ]] || attest_slsa "ppc64le" "${STEPS_EXTRACT_OUTPUTS_DIGEST_PPC64LE}"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_RISCV64}" == "" ]] || attest_slsa "riscv64" "${STEPS_EXTRACT_OUTPUTS_DIGEST_RISCV64}"
+        [[ "${STEPS_EXTRACT_OUTPUTS_DIGEST_S390X}" == "" ]] || attest_slsa "s390x" "${STEPS_EXTRACT_OUTPUTS_DIGEST_S390X}"
 
     # Now that everything else has completed successfully, update the target tag.
     # based on the digest produced above.
@@ -386,9 +410,14 @@ runs:
       run: |
         set -x
 
-        crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:${{ inputs.target-tag }}
+        crane cp ${STEPS_APKO_OUTPUTS_DIGEST} ${INPUTS_BASE_TAG}:${INPUTS_TARGET_TAG}
 
-        for tag in $(echo ${{ inputs.additional-tags }} | sed "s/,/ /g")
+        for tag in $(echo ${INPUTS_ADDITIONAL_TAGS} | sed "s/,/ /g")
         do
-          crane cp ${{ steps.apko.outputs.digest }} ${{ inputs.base-tag }}:$tag
+          crane cp ${STEPS_APKO_OUTPUTS_DIGEST} ${INPUTS_BASE_TAG}:$tag
         done
+      env:
+        STEPS_APKO_OUTPUTS_DIGEST: ${{ steps.apko.outputs.digest }}
+        INPUTS_BASE_TAG: ${{ inputs.base-tag }}
+        INPUTS_TARGET_TAG: ${{ inputs.target-tag }}
+        INPUTS_ADDITIONAL_TAGS: ${{ inputs.additional-tags }}
