@@ -265,11 +265,14 @@ runs:
         INPUTS_FULCIO_URL: ${{ inputs.FULCIO_URL }}
         INPUTS_REKOR_URL: ${{ inputs.REKOR_URL }}
       run: |
-        cosign sign --yes $(cat ${INPUTS_IMAGE_REFS}) \
-            --fulcio-url ${INPUTS_FULCIO_URL}  --rekor-url ${INPUTS_REKOR_URL} \
+        # image_refs is a file with one image reference per line.
+        mapfile -t refs < "${INPUTS_IMAGE_REFS}"
+        cosign sign --yes \
+            --fulcio-url "${INPUTS_FULCIO_URL}" --rekor-url "${INPUTS_REKOR_URL}" \
             -a sha=${{ github.sha }} \
             -a run_id=${{ github.run_id }} \
-            -a run_attempt=${{ github.run_attempt }}
+            -a run_attempt=${{ github.run_attempt }} \
+            -- "${refs[@]}"
 
     - name: Extract the digests for each architecture
       id: extract
@@ -283,7 +286,7 @@ runs:
         echo "${output}" >> $GITHUB_OUTPUT
 
         # If its an index, extract the platform digests too
-        CRANE_MANIFEST_OUTPUT="$(crane manifest ${STEPS_APKO_OUTPUTS_DIGEST})"
+        CRANE_MANIFEST_OUTPUT="$(crane manifest -- "${STEPS_APKO_OUTPUTS_DIGEST}")"
         if [[ "$(echo $CRANE_MANIFEST_OUTPUT | jq -r .mediaType)" == "application/vnd.oci.image.index.v1+json" ]]; then
           for combo in `echo $CRANE_MANIFEST_OUTPUT | jq -r '.manifests[] | .platform.architecture + .platform.variant + "_" + .digest'`; do
             arch="$(echo "${combo}" | cut -d "_" -f1)"
@@ -328,7 +331,7 @@ runs:
             exit 1
           fi
           echo "Attaching ${sbomfile} to ${digest} as spdxjson attestation (arch: ${arch}) ..."
-          cosign attest --yes --type spdxjson --predicate "${sbomfile}" "${digest}"
+          cosign attest --yes --type spdxjson --predicate "${sbomfile}" -- "${digest}"
           rm -f "${sbomfile}"
         }
 
@@ -388,7 +391,7 @@ runs:
           arch="${1}"
           digest="${2}"
           echo "Attaching SLSA build provenance to ${digest} (arch: ${arch}) ..."
-          cosign attest --yes --type slsaprovenance --predicate="provenance.json" "${digest}"
+          cosign attest --yes --type slsaprovenance --predicate="provenance.json" -- "${digest}"
         }
 
         # First attest the index
@@ -409,12 +412,15 @@ runs:
     - shell: bash
       run: |
         set -x
+        # additional-tags is split on commas and spaces below; don't let a "*"
+        # in it match files.
+        set -o noglob
 
-        crane cp ${STEPS_APKO_OUTPUTS_DIGEST} ${INPUTS_BASE_TAG}:${INPUTS_TARGET_TAG}
+        crane cp -- "${STEPS_APKO_OUTPUTS_DIGEST}" "${INPUTS_BASE_TAG}:${INPUTS_TARGET_TAG}"
 
-        for tag in $(echo ${INPUTS_ADDITIONAL_TAGS} | sed "s/,/ /g")
+        for tag in ${INPUTS_ADDITIONAL_TAGS//,/ }
         do
-          crane cp ${STEPS_APKO_OUTPUTS_DIGEST} ${INPUTS_BASE_TAG}:$tag
+          crane cp -- "${STEPS_APKO_OUTPUTS_DIGEST}" "${INPUTS_BASE_TAG}:${tag}"
         done
       env:
         STEPS_APKO_OUTPUTS_DIGEST: ${{ steps.apko.outputs.digest }}
