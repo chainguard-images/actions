@@ -120,28 +120,34 @@ runs:
         "${APKO_IMAGE}" \
         -c "$(cat <<"EOF"
       set -o errexit
+      # Input values are expanded below; don't let a "*" in one match files.
+      set -o noglob
       if [ -d "${INPUTS_AUTOMOUNT_SRC}" ]; then
         echo "Creating copy of ${INPUTS_AUTOMOUNT_SRC} at ${INPUTS_AUTOMOUNT_DEST}"
         cp -r "${INPUTS_AUTOMOUNT_SRC}" "${INPUTS_AUTOMOUNT_DEST}"
       fi
       [ -n "${INPUTS_SOURCE_DATE_EPOCH}" ] && export SOURCE_DATE_EPOCH="${INPUTS_SOURCE_DATE_EPOCH}"
-      [ -n "${INPUTS_KEYRING_APPEND}" ] && keys="-k ${INPUTS_KEYRING_APPEND}"
-      [ -n "${INPUTS_BUILD_REPOSITORY_APPEND}" ] && build_repos="-b ${INPUTS_BUILD_REPOSITORY_APPEND}"
-      [ -n "${INPUTS_REPOSITORY_APPEND}" ] && repos="-r ${INPUTS_REPOSITORY_APPEND}"
-      [ -n "${INPUTS_PACKAGE_APPEND}" ] && packages="-p ${INPUTS_PACKAGE_APPEND}"
-      [ -n "${INPUTS_ARCHS}" ] && archs="--arch ${INPUTS_ARCHS}"
-      build_options=""
+      # Collect the optional flags as positional parameters, so that each input
+      # value stays one argument even if it contains whitespace.
+      set --
+      [ -n "${INPUTS_KEYRING_APPEND}" ] && set -- "$@" -k "${INPUTS_KEYRING_APPEND}"
+      [ -n "${INPUTS_BUILD_REPOSITORY_APPEND}" ] && set -- "$@" -b "${INPUTS_BUILD_REPOSITORY_APPEND}"
+      [ -n "${INPUTS_REPOSITORY_APPEND}" ] && set -- "$@" -r "${INPUTS_REPOSITORY_APPEND}"
+      [ -n "${INPUTS_PACKAGE_APPEND}" ] && set -- "$@" -p "${INPUTS_PACKAGE_APPEND}"
+      [ -n "${INPUTS_ARCHS}" ] && set -- "$@" --arch "${INPUTS_ARCHS}"
       if [ -n "${INPUTS_BUILD_OPTIONS}" ]; then
-        opts="${INPUTS_BUILD_OPTIONS}"
-        for opt in ${opts//,/ }; do
-          build_options="${build_options} --build-option ${opt}"
+        # build-options is a comma- or space-separated list of option names.
+        for opt in ${INPUTS_BUILD_OPTIONS//,/ }; do
+          set -- "$@" --build-option "${opt}"
         done
       fi
+      # "--" ends flag parsing, so config and tag are never read as flags.
       /usr/bin/apko build \
-        --vcs=${INPUTS_VCS_URL} \
-        --lockfile=${INPUTS_LOCKFILE} \
+        --vcs="${INPUTS_VCS_URL}" \
+        --lockfile="${INPUTS_LOCKFILE}" \
         ${{ inputs.debug && '--log-level debug' }} \
-        ${INPUTS_CONFIG} ${INPUTS_TAG} output.tar $keys $build_repos $repos $packages $archs $build_options
+        "$@" \
+        -- "${INPUTS_CONFIG}" "${INPUTS_TAG}" output.tar
       echo EXIT CODE: $?
       EOF
       )"

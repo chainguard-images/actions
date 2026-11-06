@@ -181,11 +181,13 @@ runs:
         -c "$(cat <<"EOF"
       set -o errexit
       set -o pipefail
+      # Input values are expanded below; don't let a "*" in one match files.
+      set -o noglob
 
       if [[ "${INPUTS_GENERIC_USER}" != "" && "${INPUTS_GENERIC_PASS}" != "" ]]; then
         echo "${INPUTS_GENERIC_PASS}" | \
           /usr/bin/apko login -u "${INPUTS_GENERIC_USER}" \
-            --password-stdin "$(echo "${INPUTS_TAG}" | cut -d'/' -f1)"
+            --password-stdin -- "$(echo "${INPUTS_TAG}" | cut -d'/' -f1)"
       fi
 
       if [ -d "${INPUTS_AUTOMOUNT_SRC}" ]; then
@@ -193,28 +195,34 @@ runs:
         cp -r "${INPUTS_AUTOMOUNT_SRC}" "${INPUTS_AUTOMOUNT_DEST}"
       fi
       [ -n "${INPUTS_SOURCE_DATE_EPOCH}" ] && export SOURCE_DATE_EPOCH="${INPUTS_SOURCE_DATE_EPOCH}"
-      [ -n "${INPUTS_KEYRING_APPEND}" ] && keys="-k ${INPUTS_KEYRING_APPEND}"
-      [ -n "${INPUTS_BUILD_REPOSITORY_APPEND}" ] && build_repos="-b ${INPUTS_BUILD_REPOSITORY_APPEND}"
-      [ -n "${INPUTS_REPOSITORY_APPEND}" ] && repos="-r ${INPUTS_REPOSITORY_APPEND}"
-      [ -n "${INPUTS_PACKAGE_APPEND}" ] && packages="-p ${INPUTS_PACKAGE_APPEND}"
-      [ -n  "${INPUTS_ARCHS}" ] && archs="--arch ${INPUTS_ARCHS}"
-      [ -n  "${INPUTS_ANNOTATIONS}" ] && annotations="--annotations ${INPUTS_ANNOTATIONS}"
-      build_options=""
+      # Collect the optional flags as positional parameters, so that each input
+      # value stays one argument even if it contains whitespace.
+      set --
+      [ -n "${INPUTS_KEYRING_APPEND}" ] && set -- "$@" -k "${INPUTS_KEYRING_APPEND}"
+      [ -n "${INPUTS_BUILD_REPOSITORY_APPEND}" ] && set -- "$@" -b "${INPUTS_BUILD_REPOSITORY_APPEND}"
+      [ -n "${INPUTS_REPOSITORY_APPEND}" ] && set -- "$@" -r "${INPUTS_REPOSITORY_APPEND}"
+      [ -n "${INPUTS_PACKAGE_APPEND}" ] && set -- "$@" -p "${INPUTS_PACKAGE_APPEND}"
+      [ -n "${INPUTS_ARCHS}" ] && set -- "$@" --arch "${INPUTS_ARCHS}"
+      [ -n "${INPUTS_ANNOTATIONS}" ] && set -- "$@" --annotations "${INPUTS_ANNOTATIONS}"
       if [ -n "${INPUTS_BUILD_OPTIONS}" ]; then
-        opts="${INPUTS_BUILD_OPTIONS}"
-        for opt in ${opts//,/ }; do
-          build_options="${build_options} --build-option ${opt}"
+        # build-options is a comma- or space-separated list of option names.
+        for opt in ${INPUTS_BUILD_OPTIONS//,/ }; do
+          set -- "$@" --build-option "${opt}"
         done
       fi
 
-      sbomPath="--sbom-path=${INPUTS_SBOM_PATH}"
-
       export DIGEST_FILE="/tmp/digest"
+      # "--" ends flag parsing, so config and the tags are never read as flags.
+      # INPUTS_TAG is left unquoted because it may be a space-separated list of
+      # tags (see README.md); each word becomes one tag argument.
       /usr/bin/apko publish \
-        --vcs=${INPUTS_VCS_URL} \
-        --lockfile=${INPUTS_LOCKFILE} \
+        --vcs="${INPUTS_VCS_URL}" \
+        --lockfile="${INPUTS_LOCKFILE}" \
         ${{ inputs.debug && '--log-level debug' }} \
-        --image-refs="${INPUTS_IMAGE_REFS}" ${INPUTS_CONFIG} ${INPUTS_TAG} $keys $build_repos $repos $packages $archs $annotations $build_options $sbomPath | tee ${DIGEST_FILE}
+        --image-refs="${INPUTS_IMAGE_REFS}" \
+        --sbom-path="${INPUTS_SBOM_PATH}" \
+        "$@" \
+        -- "${INPUTS_CONFIG}" ${INPUTS_TAG} | tee "${DIGEST_FILE}"
       echo EXIT CODE: $?
       EOF
       )"
