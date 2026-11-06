@@ -208,6 +208,37 @@ outputs:
 runs:
   using: composite
   steps:
+    # base-tag, target-tag and additional-tags end up in $GITHUB_OUTPUT and on
+    # the crane and cosign command lines. Reject anything that isn't a plain
+    # image repository or tag before using them.
+    - name: Validate tag inputs
+      shell: bash
+      env:
+        INPUTS_BASE_TAG: ${{ inputs.base-tag }}
+        INPUTS_TARGET_TAG: ${{ inputs.target-tag }}
+        INPUTS_ADDITIONAL_TAGS: ${{ inputs.additional-tags }}
+      run: |
+        set -o noglob
+        # Registry host, optional port, and repository path. Uppercase is
+        # allowed because the default (ghcr.io/<owner>/<repo>) can contain it.
+        repo_re='^[A-Za-z0-9][A-Za-z0-9._:/-]*$'
+        # OCI distribution spec tag grammar.
+        tag_re='^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$'
+        if [[ ! "${INPUTS_BASE_TAG}" =~ ${repo_re} ]]; then
+          echo "::error::invalid base-tag: must be an image repository such as ghcr.io/owner/name"
+          exit 1
+        fi
+        if [[ ! "${INPUTS_TARGET_TAG}" =~ ${tag_re} ]]; then
+          echo "::error::invalid target-tag: must match ${tag_re}"
+          exit 1
+        fi
+        for tag in ${INPUTS_ADDITIONAL_TAGS//,/ }; do
+          if [[ ! "${tag}" =~ ${tag_re} ]]; then
+            echo "::error::invalid entry in additional-tags: each tag must match ${tag_re}"
+            exit 1
+          fi
+        done
+
     - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
     - uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
 
@@ -278,6 +309,13 @@ runs:
       id: extract
       shell: bash
       run: |
+        # Everything written to $GITHUB_OUTPUT below must be a single line;
+        # check the values that come from apko and the registry first.
+        digest_re='^sha256:[0-9a-f]{64}$'
+        if [[ ! "${STEPS_APKO_OUTPUTS_DIGEST}" =~ ^[A-Za-z0-9._:/-]+@sha256:[0-9a-f]{64}$ ]]; then
+          echo "::error::unexpected digest from apko-publish: ${STEPS_APKO_OUTPUTS_DIGEST@Q}"
+          exit 1
+        fi
         output="digest-index=${STEPS_APKO_OUTPUTS_DIGEST}"
         echo "Adding GitHub step output: ${output}"
         echo "${output}" >> $GITHUB_OUTPUT
@@ -291,6 +329,10 @@ runs:
           for combo in `echo $CRANE_MANIFEST_OUTPUT | jq -r '.manifests[] | .platform.architecture + .platform.variant + "_" + .digest'`; do
             arch="$(echo "${combo}" | cut -d "_" -f1)"
             digest="$(echo "${combo}" | cut -d "_" -f2)"
+            if [[ ! "${arch}" =~ ^[A-Za-z0-9]+$ || ! "${digest}" =~ ${digest_re} ]]; then
+              echo "::error::unexpected platform entry in the image index: ${combo@Q}"
+              exit 1
+            fi
             output="digest-${arch}=${INPUTS_BASE_TAG}@${digest}"
             echo "Adding GitHub step output: ${output}"
             echo "${output}" >> $GITHUB_OUTPUT
