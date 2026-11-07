@@ -1,0 +1,6 @@
+# PyYAML, used only by the action argument tests. Hashes from PyPI (6.0.2);
+# both the cp313 manylinux wheel and the sdist are listed so --require-hashes
+# accepts whichever pip selects on the runner.
+PyYAML==6.0.2 \
+    --hash=sha256:70b189594dbe54f75ab3a1acec5f1e3faa7e8cf2f1e08d9b561cb41b845f69d5 \
+    --hash=sha256:d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e
