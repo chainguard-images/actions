@@ -64,7 +64,10 @@ runs:
       run: |
         cat ${{ env.CONFIG_FILE }}
 
-    - uses: ./apko-publish
+    # Use this repo's apko-publish at the ref the caller pinned scan-apk to.
+    # "./" would resolve against the caller's workspace instead. Requires the
+    # Actions runner 2.336.0 or newer; not available on GHES.
+    - uses: $/apko-publish
       with:
         config: ${{ env.CONFIG_FILE }}
         tag: localhost:1234/apk-scan
