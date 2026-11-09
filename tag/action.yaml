@@ -52,9 +52,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        repository: chainguard-images/actions
     - uses: imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7
 
     - name: Set up Go
@@ -76,9 +73,14 @@ runs:
         DOCKER_IMAGE_TAG: ${{ inputs.docker_image_tag }}
         DOCKER_IMAGE: ${{ inputs.docker_image }}
         EXCLUDED_TAGS: ${{ inputs.excluded_tags }}
+        # Build from the action's own checked-out copy, at the ref the caller
+        # pinned this action to, instead of a separate unpinned checkout of
+        # chainguard-images/actions into the caller's workspace.
+        ACTION_PATH: ${{ github.action_path }}
       run: |
-        (cd tag && go build -o ../tag-run main.go)
-        ./tag-run \
+        tagrun="${RUNNER_TEMP}/tag-run"
+        (cd "${ACTION_PATH}" && go build -o "${tagrun}" .)
+        "${tagrun}" \
           -distroless-image="${DISTROLESS_IMAGE}" \
           -docker-image-tag="${DOCKER_IMAGE_TAG}" \
           -docker-image="${DOCKER_IMAGE}" \
