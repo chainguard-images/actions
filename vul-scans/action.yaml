@@ -135,12 +135,14 @@ runs:
           exit 1
         fi
 
-        curl -s -o snyk https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}
-
-        # Verify downloaded binary against known-good sha256 checksum.
-        # Checksums sourced from https://static.snyk.io/cli/v1.966.0/sha256sums.txt.asc
-        curl -sL "https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}.sha256" -o snyk.sha256
-        echo "$(cat snyk.sha256)" | sha256sum -c -
+        # Download the CLI, then verify it against the checksum published next
+        # to it. Same origin, so this catches a corrupted download, not a
+        # malicious mirror. Download under the published name so the checksum
+        # file (which names ${SNYK_DOWNLOAD}) matches, then rename to "snyk".
+        curl -s -o "${SNYK_DOWNLOAD}" "https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}"
+        curl -sL -o "${SNYK_DOWNLOAD}.sha256" "https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}.sha256"
+        sha256sum -c "${SNYK_DOWNLOAD}.sha256"
+        mv "${SNYK_DOWNLOAD}" snyk
 
         echo "SNYK_VERSION=${SNYK_VERSION}" >> $GITHUB_ENV
         echo "SNYK_URL=https://static.snyk.io/cli/${SNYK_VERSION}/${SNYK_DOWNLOAD}" >> $GITHUB_ENV
