@@ -218,7 +218,7 @@ runs:
       /usr/bin/apko publish \
         --vcs="${INPUTS_VCS_URL}" \
         --lockfile="${INPUTS_LOCKFILE}" \
-        ${{ inputs.debug && '--log-level debug' }} \
+        ${{ inputs.debug == 'true' && '--log-level debug' || '' }} \
         --image-refs="${INPUTS_IMAGE_REFS}" \
         --sbom-path="${INPUTS_SBOM_PATH}" \
         "$@" \
