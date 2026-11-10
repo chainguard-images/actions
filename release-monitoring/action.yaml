@@ -42,6 +42,11 @@ runs:
         if [[ "${INPUTS_API_TOKEN}" == "" ]]; then
           echo "Warning: running without a registered API token"
         fi
+        # project-id is interpolated into the request URL; it is a numeric id.
+        if [[ ! "${INPUTS_PROJECT_ID}" =~ ^[0-9]+$ ]]; then
+          echo "::error::invalid project-id: must be a number"
+          exit 1
+        fi
         TMP="$(mktemp /tmp/release-monitoring-action.XXXXXX)"
         trap "rm -rf ${TMP}" EXIT
         curl --fail -L -v -H "Authorization: Bearer ${INPUTS_API_TOKEN}" \
@@ -50,9 +55,21 @@ runs:
         echo "Response:"
         echo "--------"
         cat "${TMP}"
-        echo "latest-version=$(cat "${TMP}" | jq -r .latest_version)" >> $GITHUB_OUTPUT
-        echo "stable-versions=$(cat "${TMP}" | jq -r '.stable_versions | join(",")')" >> $GITHUB_OUTPUT
-        echo "all-versions=$(cat "${TMP}" | jq -r '.versions | join(",")')" >> $GITHUB_OUTPUT
+        emit() {
+          # Write one single-line step output. Refuse a value containing a
+          # newline or carriage return so a crafted API response can't add
+          # extra lines to $GITHUB_OUTPUT.
+          local name="$1" value="$2"
+          case "${value}" in
+            *[$'\n\r']*)
+              echo "::error::refusing to write a multiline value to ${name}"
+              exit 1 ;;
+          esac
+          printf '%s=%s\n' "${name}" "${value}" >> "$GITHUB_OUTPUT"
+        }
+        emit latest-version "$(jq -r .latest_version < "${TMP}")"
+        emit stable-versions "$(jq -r '.stable_versions | join(",")' < "${TMP}")"
+        emit all-versions "$(jq -r '.versions | join(",")' < "${TMP}")"
       env:
         INPUTS_API_TOKEN: ${{ inputs.api-token }}
         INPUTS_PROJECT_ID: ${{ inputs.project-id }}
