@@ -157,7 +157,7 @@ runs:
         -v /tmp:/tmp \
         --workdir ${{ github.workspace }} \
         -e "GITHUB_ACTOR=${INPUTS_REPOSITORY_OWNER}" \
-        -e "GITHUB_TOKEN=${INPUTS_TOKEN}" \
+        -e GITHUB_TOKEN \
         -e "REPOSITORY=${INPUTS_REPOSITORY}" \
         -e INPUTS_GENERIC_USER \
         -e INPUTS_GENERIC_PASS \
@@ -231,7 +231,7 @@ runs:
     env:
       INPUTS_APKO_IMAGE: ${{ inputs.apko-image }}
       INPUTS_REPOSITORY_OWNER: ${{ inputs.repository_owner }}
-      INPUTS_TOKEN: ${{ inputs.token }}
+      GITHUB_TOKEN: ${{ inputs.token }}
       INPUTS_REPOSITORY: ${{ inputs.repository }}
       INPUTS_GENERIC_USER: ${{ inputs.generic-user }}
       INPUTS_GENERIC_PASS: ${{ inputs.generic-pass }}
