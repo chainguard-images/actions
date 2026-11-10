@@ -256,7 +256,7 @@ runs:
       id: apko-publish-inputs
       run: |
         # If sbom-attest enabled, write SBOMs to working directory to attest later
-        echo "sbom-path=${{ inputs.sbom-attest && '.' || ''}}" >> $GITHUB_OUTPUT
+        echo "sbom-path=${{ inputs.sbom-attest == 'true' && '.' || ''}}" >> $GITHUB_OUTPUT
 
     # Only publish the versioned tag to start.  After we have signed and
     # attested things, then we use crane to update :latest below.
