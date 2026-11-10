@@ -52,10 +52,10 @@ runs:
           repositories: $(echo "${INPUTS_REPOSITORIES}" | tr -d '[:space:]' | jq --raw-input -c --slurp 'split(",")')
           keyring: $(echo "${INPUTS_KEYRING}" | tr -d '[:space:]' | jq --raw-input -c --slurp 'split(",")')
           packages:
-          - ${INPUTS_PACKAGE}
+          - $(printf '%s' "${INPUTS_PACKAGE}" | jq --raw-input --slurp -c .)
 
         archs:
-        - ${INPUTS_ARCHITECTURE}
+        - $(printf '%s' "${INPUTS_ARCHITECTURE}" | jq --raw-input --slurp -c .)
         EOF
 
         echo "CONFIG_FILE=${TMP}" >> $GITHUB_ENV
