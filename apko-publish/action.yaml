@@ -146,7 +146,7 @@ runs:
   - id: docker-run
     shell: bash
     run: |
-      APKO_IMAGE="${{ inputs.apko-image }}"
+      APKO_IMAGE="${INPUTS_APKO_IMAGE}"
       if [[ "${APKO_IMAGE}" == "" ]]; then
         echo "Warning: using latest wolfi-dev/sdk image since apko-image input was empty string."
         APKO_IMAGE="ghcr.io/wolfi-dev/sdk:latest"
@@ -156,49 +156,98 @@ runs:
         -v $PWD:${{ github.workspace }} \
         -v /tmp:/tmp \
         --workdir ${{ github.workspace }} \
-        -e "GITHUB_ACTOR=${{ inputs.repository_owner }}" \
-        -e "GITHUB_TOKEN=${{ inputs.token }}" \
-        -e "REPOSITORY=${{ inputs.repository }}" \
+        -e "GITHUB_ACTOR=${INPUTS_REPOSITORY_OWNER}" \
+        -e "GITHUB_TOKEN=${INPUTS_TOKEN}" \
+        -e "REPOSITORY=${INPUTS_REPOSITORY}" \
+        -e INPUTS_GENERIC_USER \
+        -e INPUTS_GENERIC_PASS \
+        -e INPUTS_TAG \
+        -e INPUTS_AUTOMOUNT_SRC \
+        -e INPUTS_AUTOMOUNT_DEST \
+        -e INPUTS_SOURCE_DATE_EPOCH \
+        -e INPUTS_KEYRING_APPEND \
+        -e INPUTS_BUILD_REPOSITORY_APPEND \
+        -e INPUTS_REPOSITORY_APPEND \
+        -e INPUTS_PACKAGE_APPEND \
+        -e INPUTS_ARCHS \
+        -e INPUTS_ANNOTATIONS \
+        -e INPUTS_BUILD_OPTIONS \
+        -e INPUTS_SBOM_PATH \
+        -e INPUTS_VCS_URL \
+        -e INPUTS_LOCKFILE \
+        -e INPUTS_IMAGE_REFS \
+        -e INPUTS_CONFIG \
         "${APKO_IMAGE}" \
         -c "$(cat <<"EOF"
       set -o errexit
       set -o pipefail
+      # Input values are expanded below; don't let a "*" in one match files.
+      set -o noglob
 
-      if [[ "${{ inputs.generic-user }}" != "" && "${{ inputs.generic-pass }}" != "" ]]; then
-        echo "${{ inputs.generic-pass }}" | \
-          /usr/bin/apko login -u "${{ inputs.generic-user }}" \
-            --password-stdin "$(echo "${{ inputs.tag }}" | cut -d'/' -f1)"
+      if [[ "${INPUTS_GENERIC_USER}" != "" && "${INPUTS_GENERIC_PASS}" != "" ]]; then
+        echo "${INPUTS_GENERIC_PASS}" | \
+          /usr/bin/apko login -u "${INPUTS_GENERIC_USER}" \
+            --password-stdin -- "$(echo "${INPUTS_TAG}" | cut -d'/' -f1)"
       fi
 
-      if [ -d "${{ inputs.automount-src }}" ]; then
-        echo "Creating copy of ${{ inputs.automount-src }} at ${{ inputs.automount-dest }}"
-        cp -r "${{ inputs.automount-src }}" "${{ inputs.automount-dest }}"
+      if [ -d "${INPUTS_AUTOMOUNT_SRC}" ]; then
+        echo "Creating copy of ${INPUTS_AUTOMOUNT_SRC} at ${INPUTS_AUTOMOUNT_DEST}"
+        cp -r "${INPUTS_AUTOMOUNT_SRC}" "${INPUTS_AUTOMOUNT_DEST}"
       fi
-      [ -n "${{ inputs.source-date-epoch }}" ] && export SOURCE_DATE_EPOCH='${{ inputs.source-date-epoch }}'
-      [ -n "${{ inputs.keyring-append }}" ] && keys="-k ${{ inputs.keyring-append }}"
-      [ -n "${{ inputs.build-repository-append }}" ] && build_repos="-b ${{ inputs.build-repository-append }}"
-      [ -n "${{ inputs.repository-append }}" ] && repos="-r ${{ inputs.repository-append }}"
-      [ -n "${{ inputs.package-append }}" ] && packages="-p ${{ inputs.package-append }}"
-      [ -n  "${{ inputs.archs }}" ] && archs="--arch ${{ inputs.archs }}"
-      [ -n  "${{ inputs.annotations }}" ] && annotations="--annotations ${{ inputs.annotations }}"
-      build_options=""
-      if [ -n "${{ inputs.build-options }}" ]; then
-        opts="${{ inputs.build-options }}"
-        for opt in ${opts//,/ }; do
-          build_options="${build_options} --build-option ${opt}"
+      [ -n "${INPUTS_SOURCE_DATE_EPOCH}" ] && export SOURCE_DATE_EPOCH="${INPUTS_SOURCE_DATE_EPOCH}"
+      # Collect the optional flags as positional parameters, so that each input
+      # value stays one argument even if it contains whitespace.
+      set --
+      [ -n "${INPUTS_KEYRING_APPEND}" ] && set -- "$@" -k "${INPUTS_KEYRING_APPEND}"
+      [ -n "${INPUTS_BUILD_REPOSITORY_APPEND}" ] && set -- "$@" -b "${INPUTS_BUILD_REPOSITORY_APPEND}"
+      [ -n "${INPUTS_REPOSITORY_APPEND}" ] && set -- "$@" -r "${INPUTS_REPOSITORY_APPEND}"
+      [ -n "${INPUTS_PACKAGE_APPEND}" ] && set -- "$@" -p "${INPUTS_PACKAGE_APPEND}"
+      [ -n "${INPUTS_ARCHS}" ] && set -- "$@" --arch "${INPUTS_ARCHS}"
+      [ -n "${INPUTS_ANNOTATIONS}" ] && set -- "$@" --annotations "${INPUTS_ANNOTATIONS}"
+      if [ -n "${INPUTS_BUILD_OPTIONS}" ]; then
+        # build-options is a comma- or space-separated list of option names.
+        for opt in ${INPUTS_BUILD_OPTIONS//,/ }; do
+          set -- "$@" --build-option "${opt}"
         done
       fi
 
-      sbomPath="--sbom-path=${{ inputs.sbom-path }}"
-
       export DIGEST_FILE="/tmp/digest"
+      # "--" ends flag parsing, so config and the tags are never read as flags.
+      # INPUTS_TAG is left unquoted because it may be a space-separated list of
+      # tags (see README.md); each word becomes one tag argument.
       /usr/bin/apko publish \
-        --vcs=${{ inputs.vcs-url }} \
-        --lockfile=${{ inputs.lockfile }} \
+        --vcs="${INPUTS_VCS_URL}" \
+        --lockfile="${INPUTS_LOCKFILE}" \
         ${{ inputs.debug && '--log-level debug' }} \
-        --image-refs="${{ inputs.image_refs }}" ${{ inputs.config }} ${{ inputs.tag }} $keys $build_repos $repos $packages $archs $annotations $build_options $sbomPath | tee ${DIGEST_FILE}
+        --image-refs="${INPUTS_IMAGE_REFS}" \
+        --sbom-path="${INPUTS_SBOM_PATH}" \
+        "$@" \
+        -- "${INPUTS_CONFIG}" ${INPUTS_TAG} | tee "${DIGEST_FILE}"
       echo EXIT CODE: $?
       EOF
       )"
 
       echo "digest=$(cat /tmp/digest)" >> $GITHUB_OUTPUT
+    env:
+      INPUTS_APKO_IMAGE: ${{ inputs.apko-image }}
+      INPUTS_REPOSITORY_OWNER: ${{ inputs.repository_owner }}
+      INPUTS_TOKEN: ${{ inputs.token }}
+      INPUTS_REPOSITORY: ${{ inputs.repository }}
+      INPUTS_GENERIC_USER: ${{ inputs.generic-user }}
+      INPUTS_GENERIC_PASS: ${{ inputs.generic-pass }}
+      INPUTS_TAG: ${{ inputs.tag }}
+      INPUTS_AUTOMOUNT_SRC: ${{ inputs.automount-src }}
+      INPUTS_AUTOMOUNT_DEST: ${{ inputs.automount-dest }}
+      INPUTS_SOURCE_DATE_EPOCH: ${{ inputs.source-date-epoch }}
+      INPUTS_KEYRING_APPEND: ${{ inputs.keyring-append }}
+      INPUTS_BUILD_REPOSITORY_APPEND: ${{ inputs.build-repository-append }}
+      INPUTS_REPOSITORY_APPEND: ${{ inputs.repository-append }}
+      INPUTS_PACKAGE_APPEND: ${{ inputs.package-append }}
+      INPUTS_ARCHS: ${{ inputs.archs }}
+      INPUTS_ANNOTATIONS: ${{ inputs.annotations }}
+      INPUTS_BUILD_OPTIONS: ${{ inputs.build-options }}
+      INPUTS_SBOM_PATH: ${{ inputs.sbom-path }}
+      INPUTS_VCS_URL: ${{ inputs.vcs-url }}
+      INPUTS_LOCKFILE: ${{ inputs.lockfile }}
+      INPUTS_IMAGE_REFS: ${{ inputs.image_refs }}
+      INPUTS_CONFIG: ${{ inputs.config }}

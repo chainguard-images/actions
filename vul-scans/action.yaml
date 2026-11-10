@@ -107,6 +107,19 @@ runs:
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
 
+    # The image is passed to snyk, cosign and trivy-action as a command-line
+    # argument. Reject values that a tool could split into several arguments
+    # or read as a flag.
+    - name: Validate image input
+      shell: bash
+      env:
+        INPUTS_IMAGE: ${{ inputs.image }}
+      run: |
+        if [[ -z "${INPUTS_IMAGE}" || "${INPUTS_IMAGE}" == -* || "${INPUTS_IMAGE}" =~ [[:space:][:cntrl:]] ]]; then
+          echo "::error::invalid image input: it must be non-empty, must not start with '-', and must not contain whitespace"
+          exit 1
+        fi
+
     - id: scan-start
       run: |
         echo "date=$(TZ=Zulu date "+%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
@@ -121,6 +134,13 @@ runs:
         SNYK_VERSION: ${{ inputs.SNYK_VERSION }}
       run: |
         set -ex
+
+        # SNYK_VERSION is written to $GITHUB_ENV below; reject anything that
+        # could smuggle in extra lines.
+        if [[ ! "${SNYK_VERSION}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+          echo "invalid SNYK_VERSION: ${SNYK_VERSION}"
+          exit 1
+        fi
 
         SNYK_DOWNLOAD="snyk-linux"
 
@@ -152,8 +172,9 @@ runs:
       shell: bash
       env:
         SNYK_TOKEN: ${{ inputs.SNYK_TOKEN }}
+        INPUTS_IMAGE: ${{ inputs.image }}
       run: |
-        ./snyk container test ${{ inputs.image }} \
+        ./snyk container test "${INPUTS_IMAGE}" \
         --app-vulns --json --severity-threshold=low \
         --json-file-output=snyk.json >/dev/null || true
 
@@ -163,11 +184,15 @@ runs:
       id: snyk-attest
       env:
         COSIGN_EXPERIMENTAL: "true"
+        STEPS_SCAN_START_OUTPUTS_DATE: ${{ steps.scan-start.outputs.date }}
+        INPUTS_FULCIO_URL: ${{ inputs.FULCIO_URL }}
+        INPUTS_REKOR_URL: ${{ inputs.REKOR_URL }}
+        INPUTS_IMAGE: ${{ inputs.image }}
       run: |
         ATTESTATION=$(mktemp)
 
-        echo "Snyk SCANNER_URI: ${{ env.SNYK_URL }}"
-        echo "Snyk SCANNER_VERSION: ${{ env.SNYK_VERSION }}"
+        echo "Snyk SCANNER_URI: ${SNYK_URL}"
+        echo "Snyk SCANNER_VERSION: ${SNYK_VERSION}"
 
         cat > "${ATTESTATION}" <<EOF
         {
@@ -175,15 +200,15 @@ runs:
               "parameters": null,
               "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "event_id": "${{ github.run_id }}",
-              "builder.id": "${{ github.workflow }}"
+              "builder.id": "${GITHUB_WORKFLOW}"
             },
             "scanner": {
-              "uri": "${{ env.SNYK_URL }}",
-              "version": "${{ env.SNYK_VERSION }}",
+              "uri": "${SNYK_URL}",
+              "version": "${SNYK_VERSION}",
               "result": $(cat snyk.json | jq .)
             },
             "metadata": {
-              "scanStartedOn": "${{ steps.scan-start.outputs.date }}",
+              "scanStartedOn": "${STEPS_SCAN_START_OUTPUTS_DATE}",
               "scanFinishedOn": "$(TZ=Zulu date "+%Y-%m-%dT%H:%M:%SZ")"
             }
         }
@@ -191,8 +216,8 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
-        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
+        cosign attest --fulcio-url "${INPUTS_FULCIO_URL}"  --rekor-url "${INPUTS_REKOR_URL}" \
+        --type vuln --predicate "${ATTESTATION}" -- "${INPUTS_IMAGE}"
 
     # Note: using a fork. See open PR:
     # https://github.com/aquasecurity/trivy-action/pull/191
@@ -215,6 +240,10 @@ runs:
       id: trivy-attest
       env:
         COSIGN_EXPERIMENTAL: "true"
+        STEPS_SCAN_START_OUTPUTS_DATE: ${{ steps.scan-start.outputs.date }}
+        INPUTS_FULCIO_URL: ${{ inputs.FULCIO_URL }}
+        INPUTS_REKOR_URL: ${{ inputs.REKOR_URL }}
+        INPUTS_IMAGE: ${{ inputs.image }}
       run: |
         ATTESTATION=$(mktemp)
 
@@ -230,7 +259,7 @@ runs:
               "parameters": null,
               "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "event_id": "${{ github.run_id }}",
-              "builder.id": "${{ github.workflow }}"
+              "builder.id": "${GITHUB_WORKFLOW}"
             },
             "scanner": {
               "uri": "$SCANNER_URI",
@@ -238,7 +267,7 @@ runs:
               "result": $(cat trivy-results.sarif | jq .)
             },
             "metadata": {
-              "scanStartedOn": "${{ steps.scan-start.outputs.date }}",
+              "scanStartedOn": "${STEPS_SCAN_START_OUTPUTS_DATE}",
               "scanFinishedOn": "$(TZ=Zulu date "+%Y-%m-%dT%H:%M:%SZ")"
             }
         }
@@ -246,8 +275,8 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
-        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }}
+        cosign attest --fulcio-url "${INPUTS_FULCIO_URL}"  --rekor-url "${INPUTS_REKOR_URL}" \
+        --type vuln --predicate "${ATTESTATION}" -- "${INPUTS_IMAGE}"
 
 
     - name: Scan image with Anchore/Grype
@@ -265,11 +294,16 @@ runs:
       id: grype-attest
       env:
         COSIGN_EXPERIMENTAL: "true"
+        STEPS_GRYPE_SCAN_OUTPUTS_SARIF: ${{ steps.grype-scan.outputs.sarif }}
+        STEPS_SCAN_START_OUTPUTS_DATE: ${{ steps.scan-start.outputs.date }}
+        INPUTS_FULCIO_URL: ${{ inputs.FULCIO_URL }}
+        INPUTS_REKOR_URL: ${{ inputs.REKOR_URL }}
+        INPUTS_IMAGE: ${{ inputs.image }}
       run: |
         ATTESTATION=$(mktemp)
 
-        export SCANNER_URI=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq -r .runs[0].tool.driver.informationUri)
-        export SCANNER_VERSION=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq -r .runs[0].tool.driver.version)
+        export SCANNER_URI=$(cat "${STEPS_GRYPE_SCAN_OUTPUTS_SARIF}" | jq -r .runs[0].tool.driver.informationUri)
+        export SCANNER_VERSION=$(cat "${STEPS_GRYPE_SCAN_OUTPUTS_SARIF}" | jq -r .runs[0].tool.driver.version)
 
         echo "grype SCANNER_URI: $SCANNER_URI"
         echo "grype SCANNER_VERSION: $SCANNER_VERSION"
@@ -280,15 +314,15 @@ runs:
               "parameters": null,
               "uri": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
               "event_id": "${{ github.run_id }}",
-              "builder.id": "${{ github.workflow }}"
+              "builder.id": "${GITHUB_WORKFLOW}"
             },
             "scanner": {
               "uri": "$SCANNER_URI",
               "version": "$SCANNER_VERSION",
-              "result": $(cat ${{ steps.grype-scan.outputs.sarif }} | jq .)
+              "result": $(cat "${STEPS_GRYPE_SCAN_OUTPUTS_SARIF}" | jq .)
             },
             "metadata": {
-              "scanStartedOn": "${{ steps.scan-start.outputs.date }}",
+              "scanStartedOn": "${STEPS_SCAN_START_OUTPUTS_DATE}",
               "scanFinishedOn": "$(TZ=Zulu date "+%Y-%m-%dT%H:%M:%SZ")"
             }
         }
@@ -296,8 +330,8 @@ runs:
 
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
 
-        cosign attest --fulcio-url ${{ inputs.FULCIO_URL }}  --rekor-url ${{ inputs.REKOR_URL }} \
-        --type vuln --predicate "${ATTESTATION}" ${{ inputs.image }} 
+        cosign attest --fulcio-url "${INPUTS_FULCIO_URL}"  --rekor-url "${INPUTS_REKOR_URL}" \
+        --type vuln --predicate "${ATTESTATION}" -- "${INPUTS_IMAGE}" 
 
 
     - name: High Level Scan report
@@ -305,17 +339,17 @@ runs:
       shell: bash
       run: |
         GRYPE_COUNT="0"
-        if [ "${{ inputs.RUN_GRYPE }}" = "true" ]; then
-          GRYPE_COUNT=$(cat ${{ steps.grype-scan.outputs.sarif }} | jq '.runs[0].results | length')
+        if [ "${INPUTS_RUN_GRYPE}" = "true" ]; then
+          GRYPE_COUNT=$(cat "${STEPS_GRYPE_SCAN_OUTPUTS_SARIF}" | jq '.runs[0].results | length')
         fi
 
         TRIVY_COUNT="0"
-        if [ "${{ inputs.RUN_TRIVY }}" = "true" ]; then
+        if [ "${INPUTS_RUN_TRIVY}" = "true" ]; then
           TRIVY_COUNT=$(cat trivy-results.sarif | jq '.runs[0].results | length')
         fi
 
         SNYK_COUNT="0"
-        if [ "${{ inputs.RUN_SNYK }}" = "true" ]; then
+        if [ "${INPUTS_RUN_SNYK}" = "true" ]; then
           SNYK_COUNT=$(cat snyk.json | jq .uniqueCount)
         fi
 
@@ -324,12 +358,19 @@ runs:
         echo "SNYK_COUNT=$SNYK_COUNT" >> $GITHUB_OUTPUT
         echo "GRYPE_COUNT=$GRYPE_COUNT" >> $GITHUB_OUTPUT
         echo "TRIVY_COUNT=$TRIVY_COUNT" >> $GITHUB_OUTPUT
+      env:
+        INPUTS_RUN_GRYPE: ${{ inputs.RUN_GRYPE }}
+        STEPS_GRYPE_SCAN_OUTPUTS_SARIF: ${{ steps.grype-scan.outputs.sarif }}
+        INPUTS_RUN_TRIVY: ${{ inputs.RUN_TRIVY }}
+        INPUTS_RUN_SNYK: ${{ inputs.RUN_SNYK }}
 
     - name: Cue Verify Attestation
       id: cue-verify
       shell: bash
       env:
         COSIGN_EXPERIMENTAL: "true"
+        INPUTS_REKOR_URL: ${{ inputs.REKOR_URL }}
+        INPUTS_IMAGE: ${{ inputs.image }}
       run: |
         cat > vulnz.cue <<EOF
           predicateType: "cosign.sigstore.dev/attestation/vuln/v1"
@@ -337,6 +378,6 @@ runs:
         
         export COSIGN_EXPERIMENTAL="$COSIGN_EXPERIMENTAL"
         
-        cosign verify-attestation --rekor-url ${{ inputs.REKOR_URL }} \
-          --type vuln --policy vulnz.cue ${{ inputs.image }} || \
+        cosign verify-attestation --rekor-url "${INPUTS_REKOR_URL}" \
+          --type vuln --policy vulnz.cue -- "${INPUTS_IMAGE}" || \
           echo "WARNING: Could not verify attestation (is this a private image?)"
