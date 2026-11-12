@@ -98,7 +98,7 @@ runs:
   using: composite
   steps:
     - name: Setup cosign
-      uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
 
     - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
       if: inputs.DOCKER_LOGIN == 'true'
@@ -284,7 +284,7 @@ runs:
     - name: Scan image with Anchore/Grype
       if: inputs.RUN_GRYPE == 'true'
       id: grype-scan
-      uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+      uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
       with:
         image: ${{ inputs.image }}
         fail-build: false
